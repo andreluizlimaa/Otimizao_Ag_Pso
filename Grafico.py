@@ -1,96 +1,93 @@
-# grafico.py
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
-
-# Importa sua função w4 do novo arquivo
-from funcoes_otimizacao import funcao_w4
-
-# --- Funções auxiliares de w4 (não duplicar, pois já são importadas) ---
-# Se você não criou funcoes_otimizacao.py, você teria que colar elas aqui.
-# Como criamos, elas não precisam estar aqui diretamente.
-
+from funcoes_otimizacao import funcao_w4 # Certifique-se que esta é a versão corrigida
 
 # --- Função de Gráfico para PSO ---
-def GraficoPSO(enxame, iteracao, ax): # Removi 'funcao' do argumento, pois agora importamos funcao_w4
+def GraficoPSO(enxame, iteracao, ax, melhor_valor_global): # Adicionado melhor_valor_global
     ax.clear()
 
-    # CRIAR A MALHA PARA X, Y
+    # Definir o range do meshgrid para plotagem
     x_grid = np.linspace(-500, 500, 100)
     y_grid = np.linspace(-500, 500, 100)
     X, Y = np.meshgrid(x_grid, y_grid)
 
-    # CALCULA A FUNÇÃO NA MALHA X, Y usando a função importada
+    # Calcular Z usando a função W4
     Z = funcao_w4(X, Y)
 
-    # CONFIGURAÇÕES DO GRÁFICO
-    ax.set_title(f'PSO - Iteração {iteracao}')
+    # Título do gráfico com o melhor valor global
+    ax.set_title(f'PSO - Iteração {iteracao} | Melhor Valor: {melhor_valor_global:.4f}')
     ax.set_xlabel('x')
     ax.set_ylabel('y')
     ax.set_zlabel('F(x, y)')
 
-    # PLOTAGEM DA SUPERFÍCIE
-    surf = ax.plot_surface(X, Y, Z, cmap='viridis', alpha=0.4, rstride=1, cstride=1)
+    # Garantir que os limites dos eixos X e Y correspondam ao meshgrid
+    ax.set_xlim([-500, 500])
+    ax.set_ylim([-500, 500])
+
+    # --- Opção 1: Superfície com cor sólida (sem cmap) ---
+    surf = ax.plot_surface(X, Y, Z, color='lightgray', alpha=0.4, rstride=5, cstride=5)
+    
+    # --- Opção 2 (Alternativa, se quiser apenas o wireframe sem a superfície preenchida): ---
+    # ax.plot_wireframe(X, Y, Z, color='gray', rstride=5, cstride=5, linewidth=0.7)
 
 
-    # LISTA DE CORES PREDEFINIDAS
-    colors = ['red', 'yellow', 'green', 'blue', 'pink', 'purple', 'orange', 'black']
-
-    # PLOTAGEM DAS PARTÍCULAS COM CORES PREDEFINIDAS
+    # Plotar as partículas do enxame (mantido como antes)
+    colors = ['red', 'yellow', 'green', 'blue', 'pink', 'purple', 'orange', 'black', 'gray', 'brown']
     for idx, particula in enumerate(enxame):
         particula_x = particula.posicao_i[0]
         particula_y = particula.posicao_i[1]
-
-        # CHAMA A FUNÇÃO COM X, Y DA PARTÍCULA
-        particle_z_val = funcao_w4(particula_x, particula_y)
-
-        # ESCOLHE A COR PARA A PARTICULA
+        particle_z_val = funcao_w4(np.array(particula_x), np.array(particula_y))
         color = colors[idx % len(colors)]
+        ax.scatter(particula_x, particula_y, particle_z_val, color=color, s=100, edgecolors='black', linewidth=0.5)
 
-        # PLOTA A PARTICULA
-        ax.scatter(particula_x, particula_y, particle_z_val, color=color, s=100)
+    # Definir limites para o eixo Z
+    ax.set_zlim([-600, 4000])
 
-    # Ajusta os limites Z para garantir que o gráfico seja bem visualizado para a função w4
-    ax.set_zlim(-550, 50) # Ajuste manual, teste para sua função
-
-    plt.pause(0.1)
+    plt.pause(0.01)
 
 # --- NOVA FUNÇÃO DE GRÁFICO PARA AG ---
-def GraficoAG(populacao, melhor_solucao, iteracao, ax): # Removi 'funcao' do argumento
+def GraficoAG(populacao, melhor_solucao, iteracao, ax, melhor_aptidao_global): # Adicionado melhor_aptidao_global
     ax.clear()
 
-    # CRIAR A MALHA PARA X, Y
+    # Definir o range do meshgrid para plotagem
     x_grid = np.linspace(-500, 500, 100)
     y_grid = np.linspace(-500, 500, 100)
     X, Y = np.meshgrid(x_grid, y_grid)
 
-    # CALCULA A FUNÇÃO NA MALHA X, Y
-    Z = funcao_w4(X, Y) # Usa a função importada
+    # Calcular Z usando a função W4
+    Z = funcao_w4(X, Y)
 
-    # CONFIGURAÇÕES DO GRÁFICO
-    ax.set_title(f'AG - Geração {iteracao}')
+    # Título do gráfico com o melhor valor global
+    ax.set_title(f'AG - Geração {iteracao} | Melhor Valor: {melhor_aptidao_global:.4f}')
     ax.set_xlabel('x')
     ax.set_ylabel('y')
     ax.set_zlabel('F(x, y)')
 
-    # PLOTAGEM DA SUPERFÍCIE
-    surf = ax.plot_surface(X, Y, Z, cmap='plasma', alpha=0.5, rstride=1, cstride=1)
+    ax.set_xlim([-500, 500])
+    ax.set_ylim([-500, 500])
 
-    # PLOTAGEM DOS INDIVÍDUOS DA POPULAÇÃO
+    # --- Opção 1: Superfície com cor sólida (sem cmap) ---
+    surf = ax.plot_surface(X, Y, Z, color='lightgray', alpha=0.5, rstride=5, cstride=5)
+    
+    # --- Opção 2 (Alternativa, se quiser apenas o wireframe sem a superfície preenchida): ---
+    # ax.plot_wireframe(X, Y, Z, color='gray', rstride=5, cstride=5, linewidth=0.7)
+
+    # Plotar a população do AG (mantido como antes)
     population_color = 'cyan'
     best_solution_color = 'red'
-
     for individuo in populacao:
         ind_x, ind_y = individuo[0], individuo[1]
-        ind_z_val = funcao_w4(ind_x, ind_y) # Usa a função importada
+        ind_z_val = funcao_w4(np.array(ind_x), np.array(ind_y))
         ax.scatter(ind_x, ind_y, ind_z_val, color=population_color, s=50, alpha=0.7)
 
-    # PLOTAGEM DA MELHOR SOLUÇÃO GLOBAL ENCONTRADA ATÉ AGORA
+    # Plotar a melhor solução encontrada (mantido como antes)
     if melhor_solucao is not None:
         best_x, best_y = melhor_solucao[0], melhor_solucao[1]
-        best_z_val = funcao_w4(best_x, best_y) # Usa a função importada
+        best_z_val = funcao_w4(np.array(best_x), np.array(best_y))
         ax.scatter(best_x, best_y, best_z_val, color=best_solution_color, s=200, marker='o', edgecolor='black', linewidth=1.5, label='Melhor Solução Global')
 
-    ax.set_zlim(-550, 50)
+    # Definir limites para o eixo Z
+    ax.set_zlim([-500, 4000])
 
-    plt.pause(0.1)
+    plt.pause(0.01)
