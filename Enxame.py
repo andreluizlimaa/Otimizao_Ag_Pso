@@ -1,65 +1,105 @@
-# Enxame.py
+# Enxame.py (com as linhas add_add restauradas e agora funcionando)
 
-import random # Importa o módulo random para gerar números aleatórios.
-import numpy as np # Importa a biblioteca NumPy, geralmente usada para operações numéricas eficientes, embora não diretamente utilizada em todas as linhas deste código.
-from utils import global_op_counter # Importa o objeto global_op_counter do módulo 'utils', usado para rastrear operações.
+import random # Importa a biblioteca 'random' para gerar números aleatórios, essenciais para a inicialização e atualização das partículas.
+import numpy as np # Importa a biblioteca 'numpy' como 'np', fundamental para operações com arrays numéricos de forma eficiente (vetorização).
+from utils import global_op_counter # Importa 'global_op_counter' do módulo 'utils', que é um objeto global para contar operações aritméticas (multiplicações, divisões, adições/subtrações).
 
-class Enxame: # Define a classe Enxame, que representa uma partícula no algoritmo de Otimização por Enxame de Partículas (PSO).
-    def __init__(self): # Método construtor da classe Enxame.
-        self.posicao_i = [] # Inicializa uma lista vazia para armazenar a posição atual da partícula.
-        self.velocidade_i = [] # Inicializa uma lista vazia para armazenar a velocidade atual da partícula.
-        self.melhor_posicao_i = [] # Inicializa uma lista vazia para armazenar a melhor posição individual encontrada pela partícula até o momento.
-        self.melhor_valor_i = float('inf') # Inicializa o melhor valor (custo) encontrado pela partícula como infinito, para garantir que qualquer valor inicial seja menor (focado em minimização).
-        self.valor_atual_i = float('inf') # Inicializa o valor (custo) atual da posição da partícula como infinito.
+class Enxame: # Define a classe 'Enxame', que representa uma única partícula dentro do algoritmo de Otimização por Enxame de Partículas (PSO).
+    def __init__(self, limites): # Define o método construtor da classe 'Enxame'. Ele é chamado ao criar uma nova partícula e recebe 'limites' como argumento.
+        # Inicializa a posição atual da partícula como um array NumPy.
+        # random.uniform(a, b) gera um número de ponto flutuante aleatório entre 'a' e 'b'.
+        # 'limites[0][0]' e 'limites[0][1]' são os limites mínimo e máximo para a coordenada x.
+        # 'limites[1][0]' e 'limites[1][1]' são os limites mínimo e máximo para a coordenada y.
+        self.posicao_i = np.array([random.uniform(limites[0][0], limites[0][1]),
+                                   random.uniform(limites[1][0], limites[1][1])])
+        
+        # Inicializa a velocidade atual da partícula como um array NumPy.
+        # As velocidades são iniciadas aleatoriamente entre -1 e 1.
+        self.velocidade_i = np.array([random.uniform(-1, 1), 
+                                      random.uniform(-1, 1)])
+        
+        # 'melhor_posicao_i' armazena a melhor posição (com o menor valor da função objetivo)
+        # que esta partícula encontrou até o momento. É inicializada com a posição atual.
+        self.melhor_posicao_i = np.array(self.posicao_i)
+        # 'melhor_valor_i' armazena o valor da função objetivo para 'melhor_posicao_i'.
+        # Inicializado com infinito para garantir que qualquer valor real seja considerado melhor.
+        self.melhor_valor_i = float('inf')
+        # 'valor_atual_i' armazena o valor da função objetivo para a 'posicao_i' atual.
+        # Inicializado com infinito.
+        self.valor_atual_i = float('inf')
 
-        for i in range(2): # Loop que se repete 2 vezes, pois a função 'w4' é 2D (x, y).
-            self.velocidade_i.append(random.uniform(-1, 1)) # Atribui um valor de velocidade aleatório entre -1 e 1 para cada dimensão.
-            self.posicao_i.append(random.uniform(-500, 500)) # Atribui uma posição inicial aleatória entre -500 e 500 para cada dimensão.
+        # 'c1' é a constante de aceleração cognitiva (ou fator de peso pessoal), que influencia
+        # o quanto a partícula é atraída pela sua própria melhor experiência.
+        self.c1 = 1
+        # 'c2' é a constante de aceleração social (ou fator de peso global), que influencia
+        # o quanto a partícula é atraída pela melhor experiência de todo o enxame.
+        self.c2 = 1
 
-    def avaliar(self, funcao_wrapper): # Método para avaliar a aptidão da posição atual da partícula, recebendo um 'funcao_wrapper'.
-        x = self.posicao_i[0] # Atribui a coordenada x da posição atual da partícula.
-        y = self.posicao_i[1] # Atribui a coordenada y da posição atual da partícula.
+    def avaliar(self, funcao_wrapper): # Define o método 'avaliar', que calcula a aptidão (valor da função objetivo) da posição atual da partícula.
+        x = self.posicao_i[0] # Extrai a coordenada x da posição atual da partícula.
+        y = self.posicao_i[1] # Extrai a coordenada y da posição atual da partícula.
 
-        self.valor_atual_i = funcao_wrapper(x, y) # Chama a função de aptidão (através do wrapper) com as coordenadas x e y, e armazena o resultado em valor_atual_i. O wrapper também cuida da contagem de operações e avaliações.
+        # Chama a função objetivo (através do wrapper) com as coordenadas x e y.
+        # O 'funcao_wrapper' também conta o número de vezes que a função objetivo é avaliada.
+        self.valor_atual_i = funcao_wrapper(x, y)
 
-        if self.valor_atual_i < self.melhor_valor_i: # Verifica se o valor de aptidão atual é melhor (menor) do que o melhor valor individual encontrado até agora.
-            self.melhor_posicao_i = self.posicao_i.copy() # Se for melhor, atualiza a melhor_posicao_i com a cópia da posição atual.
-            self.melhor_valor_i = self.valor_atual_i # Se for melhor, atualiza o melhor_valor_i com o valor de aptidão atual.
+        if self.valor_atual_i < self.melhor_valor_i: # Compara o valor atual com o melhor valor individual já encontrado.
+            self.melhor_posicao_i = np.array(self.posicao_i) # Se o valor atual for melhor, atualiza 'melhor_posicao_i'.
+            self.melhor_valor_i = self.valor_atual_i # Atualiza 'melhor_valor_i' com o novo melhor valor.
 
-    def atualizar_velocidade(self, pos_best_g, iteracao_atual, num_iteracoes): # Método para atualizar a velocidade da partícula.
-        # AQUI COMEÇA A CONTAGEM DE MULTIPLICAÇÕES E DIVISÕES DO PSO
+    def atualizar_velocidade(self, pos_best_g, iteracao_atual, num_iteracoes): # Define o método para atualizar a velocidade da partícula.
+        # 'pos_best_g' é a melhor posição encontrada por qualquer partícula em todo o enxame (melhor global).
+        # 'iteracao_atual' é a iteração atual do PSO.
+        # 'num_iteracoes' é o número total de iterações do PSO.
 
-        # w = 0.9 - iteracao_atual*((0.9 - 0.4)/num_iteracoes) # Comentário da linha original que calcula o peso de inércia 'w'.
-        global_op_counter.add_mult(1) # Adiciona 1 à contagem de multiplicações para a operação (0.9 - 0.4) * iteracao_atual.
-        global_op_counter.add_div(1)  # Adiciona 1 à contagem de divisões para a operação resultado / num_iteracoes.
-        w = 0.9 - iteracao_atual*((0.9 - 0.4)/num_iteracoes) # Calcula o peso de inércia 'w', que diminui linearmente ao longo das iterações.
+        w_max = 0.9 # Valor máximo para o peso de inércia 'w'.
+        w_min = 0.4 # Valor mínimo para o peso de inércia 'w'.
+        
+        # --- Contagem de operações para o cálculo de 'w' ---
+        # A linha abaixo conta as operações aritméticas envolvidas no cálculo de 'w'.
+        global_op_counter.add_div(1) # Adiciona 1 à contagem de divisões (para '/ num_iteracoes').
+        global_op_counter.add_mult(1) # Adiciona 1 à contagem de multiplicações (para '* (w_max - w_min)').
+        global_op_counter.add_add(2) # Adiciona 2 à contagem de adições/subtrações (para '(0.9 - 0.4)' e 'w_max - resultado').
+        
+        # Calcula o peso de inércia 'w'. Ele decai linearmente de 'w_max' para 'w_min' ao longo das iterações.
+        # Um 'w' decrescente ajuda a promover a exploração no início e a explotação no final.
+        w = w_max - (iteracao_atual / num_iteracoes) * (w_max - w_min)
 
-        c1 = 1 # Define a constante de aceleração cognitiva (influência da melhor posição individual).
-        c2 = 1 # Define a constante de aceleração social (influência da melhor posição global).
+        r1 = random.random() # Gera um número aleatório 'r1' (entre 0 e 1) para a componente cognitiva.
+        r2 = random.random() # Gera um número aleatório 'r2' (entre 0 e 1) para a componente social.
 
-        for i in range(2): # Loop para atualizar a velocidade para cada uma das 2 dimensões.
-            r1 = random.random() # Gera um número aleatório entre 0 e 1 para a componente cognitiva.
-            r2 = random.random() # Gera um número aleatório entre 0 e 1 para a componente social.
+        # --- Componente cognitiva (pessoal) ---
+        # Esta seção calcula a parte da velocidade que atrai a partícula para sua 'melhor_posicao_i'.
+        global_op_counter.add_mult(2) # Conta 2 multiplicações (c1 * r1, e o resultado * vetor).
+        global_op_counter.add_add(2) # Conta 2 adições/subtrações (para a operação de subtração de vetor).
+        vel_cognitiva = self.c1 * r1 * (self.melhor_posicao_i - self.posicao_i)
 
-            # vel_cognitiva = c1 * r1 * (self.melhor_posicao_i[i] - self.posicao_i[i]) # Comentário da linha original que calcula a velocidade cognitiva.
-            global_op_counter.add_mult(2) # Adiciona 2 à contagem de multiplicações: c1 * r1 e o resultado * (melhor_posicao_i[i] - posicao_i[i]).
-            vel_cognitiva = c1 * r1 * (self.melhor_posicao_i[i] - self.posicao_i[i]) # Calcula a componente cognitiva da velocidade, que puxa a partícula em direção à sua melhor posição individual.
+        # --- Componente social ---
+        # Esta seção calcula a parte da velocidade que atrai a partícula para a 'pos_best_g' (melhor posição global).
+        global_op_counter.add_mult(2) # Conta 2 multiplicações (c2 * r2, e o resultado * vetor).
+        global_op_counter.add_add(2) # Conta 2 adições/subtrações (para a operação de subtração de vetor).
+        vel_social = self.c2 * r2 * (np.array(pos_best_g) - self.posicao_i) # Converte 'pos_best_g' para array NumPy para operação de vetor.
 
-            # vel_social = c2 * r2 * (pos_best_g[i] - self.posicao_i[i]) # Comentário da linha original que calcula a velocidade social.
-            global_op_counter.add_mult(2) # Adiciona 2 à contagem de multiplicações: c2 * r2 e o resultado * (pos_best_g[i] - posicao_i[i]).
-            vel_social = c2 * r2 * (pos_best_g[i] - self.posicao_i[i]) # Calcula a componente social da velocidade, que puxa a partícula em direção à melhor posição global encontrada pelo enxame.
+        # --- Atualização da velocidade final ---
+        # Combina a velocidade anterior (influenciada por 'w'), a componente cognitiva e a componente social.
+        global_op_counter.add_mult(2) # Conta 2 multiplicações (w * velocidade_i, para cada elemento do vetor).
+        global_op_counter.add_add(4) # Conta 4 adições/subtrações (duas somas de vetores de 2 elementos cada).
+        self.velocidade_i = w * self.velocidade_i + vel_cognitiva + vel_social
 
-            # self.velocidade_i[i] = w * self.velocidade_i[i] + vel_cognitiva + vel_social # Comentário da linha original que atualiza a velocidade.
-            global_op_counter.add_mult(1) # Adiciona 1 à contagem de multiplicações para w * velocidade_i[i].
-            self.velocidade_i[i] = w * self.velocidade_i[i] + vel_cognitiva + vel_social # Atualiza a velocidade da partícula combinando a velocidade anterior (influenciada pelo peso de inércia), a componente cognitiva e a componente social.
+    def atualizar_posicao(self, limites): # Define o método para atualizar a posição da partícula com base na nova velocidade.
+        # Adiciona a velocidade atual à posição atual para obter a nova posição.
+        self.posicao_i = self.posicao_i + self.velocidade_i
+        global_op_counter.add_add(2) # Conta 2 adições/subtrações (para a soma de vetor de 2 elementos).
 
-    def atualizar_posicao(self, limites): # Método para atualizar a posição da partícula, considerando os limites do espaço de busca.
-        # Nenhuma multiplicação/divisão direta significativa aqui, apenas soma e comparações # Comentário indicando que esta seção não tem muitas operações complexas para contar.
-        for i in range(2): # Loop para atualizar a posição para cada uma das 2 dimensões.
-            self.posicao_i[i] = self.posicao_i[i] + self.velocidade_i[i] # Atualiza a posição da partícula somando a velocidade atual à sua posição.
-
-            if self.posicao_i[i] > limites[i][1]: # Verifica se a posição atual excede o limite superior para a dimensão 'i'.
-                self.posicao_i[i] = limites[i][1] # Se exceder, "prende" a partícula no limite superior.
-            if self.posicao_i[i] < limites[i][0]: # Verifica se a posição atual está abaixo do limite inferior para a dimensão 'i'.
-                self.posicao_i[i] = limites[i][0] # Se estiver abaixo, "prende" a partícula no limite inferior.
-                self.velocidade_i[i] = 0 # Anula a velocidade da partícula na dimensão 'i' se ela atingir o limite, para evitar que saia do espaço de busca.
+        # Garante que a coordenada x da partícula esteja dentro dos limites definidos.
+        # np.clip(valor, min, max) limita o 'valor' entre 'min' e 'max'.
+        self.posicao_i[0] = np.clip(self.posicao_i[0], limites[0][0], limites[0][1])
+        # Garante que a coordenada y da partícula esteja dentro dos limites definidos.
+        self.posicao_i[1] = np.clip(self.posicao_i[1], limites[1][0], limites[1][1])
+        
+        # Verifica se a partícula atingiu ou ultrapassou os limites na coordenada x.
+        if self.posicao_i[0] == limites[0][0] or self.posicao_i[0] == limites[0][1]:
+            self.velocidade_i[0] = 0 # Se sim, zera a componente x da velocidade para "parar" a partícula no limite.
+        # Verifica se a partícula atingiu ou ultrapassou os limites na coordenada y.
+        if self.posicao_i[1] == limites[1][0] or self.posicao_i[1] == limites[1][1]:
+            self.velocidade_i[1] = 0 # Se sim, zera a componente y da velocidade para "parar" a partícula no limite.

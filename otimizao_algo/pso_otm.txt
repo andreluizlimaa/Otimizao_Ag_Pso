@@ -1,0 +1,46 @@
+
+PSO_1
+# Define os parâmetros para uma execução de teste direto do PSO.
+limites_xy = [(-500, 500), (-500, 500)] # Define os limites X e Y para o espaço de busca da função objetivo.
+num_particulas_pso = 15 # Define o número de partículas para esta execução de teste.
+num_iteracoes_pso = 100 # Define o número máximo de iterações para esta execução de teste.
+iteracoes_sem_melhora_limite_pso = 50 # Define o limite de iterações sem melhoria para esta execução de teste.
+tolerancia_pso = 1e-6 # Define a tolerância para a verificação de convergência para esta execução de teste.
+c1=c2=2
+w_max = 0.9 # Valor máximo para o peso de inércia 'w'.
+w_min = 0.4 # Valor mínimo para o peso de inércia 'w'.
+
+--- Teste direto da Otimização por Enxame de Partículas (se executado como script principal) ---
+POSICAO FINAL (PSO): [np.float64(4.611586361216285e-05), np.float64(0.0007876418249817412)]
+RESULTADO FINAL (PSO): -498.9972071879072
+Iterações executadas (PSO): 100
+Avaliações da função objetivo (PSO): 1500
+Operações de Multiplicação (PSO): 128300
+Operações de Divisão (PSO): 17000
+Avaliações para o "melhor global" (PSO): 1487
+Multiplicações para o "melhor global" (PSO): 127093
+Divisões para o "melhor global" (PSO): 16840
+
+########################################################################################
+
+PSO_2
+# Define os parâmetros para uma execução de teste direto do PSO.
+limites_xy = [(-500, 500), (-500, 500)] # Define os limites X e Y para o espaço de busca da função objetivo.
+num_particulas_pso = 15 # Define o número de partículas para esta execução de teste.
+num_iteracoes_pso = 100 # Define o número máximo de iterações para esta execução de teste.
+iteracoes_sem_melhora_limite_pso = 50 # Define o limite de iterações sem melhoria para esta execução de teste.
+tolerancia_pso = 1e-6 # Define a tolerância para a verificação de convergência para esta execução de teste.
+c1=c2=2
+w_max = 0.9 # Valor máximo para o peso de inércia 'w'.
+w_min = 0.4 # Valor mínimo para o peso de inércia 'w'.
+
+--- Teste direto da Otimização por Enxame de Partículas (se executado como script principal) ---
+POSICAO FINAL (PSO): [np.float64(4.611586361216285e-05), np.float64(0.0007876418249817412)]
+RESULTADO FINAL (PSO): -498.9972071879072
+Iterações executadas (PSO): 100
+Avaliações da função objetivo (PSO): 1500
+Operações de Multiplicação (PSO): 128300
+Operações de Divisão (PSO): 17000
+Avaliações para o "melhor global" (PSO): 1487
+Multiplicações para o "melhor global" (PSO): 127093
+Divisões para o "melhor global" (PSO): 16840
