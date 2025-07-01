@@ -17,9 +17,6 @@ class OperationCounter: # Define a classe 'OperationCounter', que é usada para 
     def add_div(self, count=1): # Define o método 'add_div', usado para adicionar um valor ao contador de divisões. Por padrão, adiciona 1.
         self.divisions += count # Incrementa o contador de divisões pelo valor de 'count'.
 
-    def add_add(self, count=1): # Define o método 'add_add', usado para adicionar um valor ao contador de adições/subtrações. Por padrão, adiciona 1.
-        self.additions += count # Incrementa o contador de adições pelo valor de 'count'.
-
 global_op_counter = OperationCounter() # Cria uma instância global da classe 'OperationCounter'. Este objeto será compartilhado e usado por todas as partes do código que precisam contar operações (como o PSO e o AG).
 
 class FuncaoObjetivoWrapper: # Define a classe 'FuncaoObjetivoWrapper'. Esta classe atua como um "invólucro" para a sua função objetivo real (por exemplo, `funcao_w4`). Ela permite contar quantas vezes a função objetivo é chamada e, opcionalmente, integrar a contagem de operações.

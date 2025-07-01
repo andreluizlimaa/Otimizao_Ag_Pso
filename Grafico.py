@@ -4,7 +4,6 @@ from mpl_toolkits.mplot3d import Axes3D # Importa Axes3D do Matplotlib para perm
 from funcoes_otimizacao import funcao_w4 # Importa a função de otimização 'funcao_w4', que será a base para a superfície do gráfico.
 
 # --- Função de Gráfico para PSO ---
-# Adicionado 'pso_params' como um novo argumento para receber os parâmetros e estatísticas do PSO.
 def GraficoPSO(enxame, iteracao, ax, melhor_valor_global, pso_params=None):
     """
     Função para plotar o gráfico do PSO (Particle Swarm Optimization).
@@ -60,7 +59,7 @@ def GraficoPSO(enxame, iteracao, ax, melhor_valor_global, pso_params=None):
             f'W_min: {pso_params["w_min"]:.2f}\n'
             f'Partículas: {pso_params["num_particulas"]}\n'
             f'Iterações Totais: {pso_params["iteracoes_totais"]}\n\n'
-            f'--- Estatísticas Totais ---\n'
+            f'--- Estatísticas de Convergência ---\n'
             f'Avaliações FO: {pso_params["avaliacoes_funcao"]}\n'
             f'Mult: {pso_params["multiplicacoes_total"]}\n'
             f'Div: {pso_params["divisoes_total"]}\n\n'
@@ -143,7 +142,7 @@ def GraficoAG(populacao, melhor_solucao, iteracao, ax, melhor_aptidao_global, ag
             f'Taxa Mutação: {ag_params["taxa_mutacao"]:.2f}\n'
             f'Taxa Crossover: {ag_params["taxa_crossover"]:.2f}\n'
             f'Iterações Totais: {ag_params["iteracoes_totais"]}\n\n'
-            f'--- Estatísticas Totais ---\n'
+            f'--- Estatísticas de Convergência ---\n'
             f'Avaliações FO: {ag_params["avaliacoes_funcao"]}\n'
             f'Mult: {ag_params["multiplicacoes_total"]}\n'
             f'Div: {ag_params["divisoes_total"]}\n\n'

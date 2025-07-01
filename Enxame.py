@@ -58,7 +58,6 @@ class Enxame: # Define a classe 'Enxame', que representa uma única partícula d
         # A linha abaixo conta as operações aritméticas envolvidas no cálculo de 'w'.
         global_op_counter.add_div(1) # Adiciona 1 à contagem de divisões (para '/ num_iteracoes').
         global_op_counter.add_mult(1) # Adiciona 1 à contagem de multiplicações (para '* (self.w_max - self.w_min)').
-        global_op_counter.add_add(2) # Adiciona 2 à contagem de adições/subtrações (para '(self.w_max - self.w_min)' e 'self.w_max - resultado').
         
         # Calcula o peso de inércia 'w'. Ele decai linearmente de 'w_max' para 'w_min' ao longo das iterações.
         # Um 'w' decrescente ajuda a promover a exploração no início e a explotação no final.
@@ -70,25 +69,19 @@ class Enxame: # Define a classe 'Enxame', que representa uma única partícula d
         # --- Componente cognitiva (pessoal) ---
         # Esta seção calcula a parte da velocidade que atrai a partícula para sua 'melhor_posicao_i'.
         global_op_counter.add_mult(2) # Conta 2 multiplicações (c1 * r1, e o resultado * vetor).
-        global_op_counter.add_add(2) # Conta 2 adições/subtrações (para a operação de subtração de vetor).
         vel_cognitiva = self.c1 * r1 * (self.melhor_posicao_i - self.posicao_i)
 
         # --- Componente social ---
         # Esta seção calcula a parte da velocidade que atrai a partícula para a 'pos_best_g' (melhor posição global).
-        global_op_counter.add_mult(2) # Conta 2 multiplicações (c2 * r2, e o resultado * vetor).
-        global_op_counter.add_add(2) # Conta 2 adições/subtrações (para a operação de subtração de vetor).
         vel_social = self.c2 * r2 * (np.array(pos_best_g) - self.posicao_i) # Converte 'pos_best_g' para array NumPy para operação de vetor.
-
         # --- Atualização da velocidade final ---
         # Combina a velocidade anterior (influenciada por 'w'), a componente cognitiva e a componente social.
         global_op_counter.add_mult(2) # Conta 2 multiplicações (w * velocidade_i, para cada elemento do vetor).
-        global_op_counter.add_add(4) # Conta 4 adições/subtrações (duas somas de vetores de 2 elementos cada).
         self.velocidade_i = w * self.velocidade_i + vel_cognitiva + vel_social
 
     def atualizar_posicao(self, limites): # Define o método para atualizar a posição da partícula com base na nova velocidade.
         # Adiciona a velocidade atual à posição atual para obter a nova posição.
         self.posicao_i = self.posicao_i + self.velocidade_i
-        global_op_counter.add_add(2) # Conta 2 adições/subtrações (para a soma de vetor de 2 elementos).
 
         # Garante que a coordenada x da partícula esteja dentro dos limites definidos.
         # np.clip(valor, min, max) limita o 'valor' entre 'min' e 'max'.
