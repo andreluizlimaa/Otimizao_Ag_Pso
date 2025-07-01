@@ -1,90 +1,187 @@
-# PSO.py
-from Enxame import Enxame # Importa a classe Enxame, que representa o grupo de partículas.
-from Grafico import GraficoPSO # Importa a função GraficoPSO para visualizar o progresso do algoritmo.
-import matplotlib.pyplot as plt # Importa a biblioteca Matplotlib para criação e exibição de gráficos.
-from funcoes_otimizacao import funcao_w4 # Importa a função objetivo W4, que será minimizada.
-from utils import global_op_counter, FuncaoObjetivoWrapper # Importa contadores de operações e o wrapper da função objetivo.
-import os # Importado para salvar arquivos (manipulação de diretórios).
-from datetime import datetime # Importado para gerar timestamp (data e hora para nomes de arquivos).
+# Importa as bibliotecas necessárias para o PSO
+import numpy as np # NumPy para operações numéricas e manipulação de arrays
+import random # Para geração de números aleatórios
+import matplotlib.pyplot as plt # Matplotlib para criação de gráficos
+from mpl_toolkits.mplot3d import Axes3D # Para gráficos 3D
+import os # Para interagir com o sistema operacional (criação de pastas, manipulação de arquivos)
+from datetime import datetime # Para trabalhar com datas e horas (gerar timestamps para nomes de arquivos)
 
+# Importa as funções personalizadas do projeto
+from funcoes_otimizacao import funcao_w4 # A função objetivo W4 a ser minimizada
+# A função GraficoPSO será importada do Grafico.py.
+from Grafico import GraficoPSO # Importa a função para plotar o gráfico do PSO
+from utils import global_op_counter, FuncaoObjetivoWrapper # Contadores globais e o wrapper para a função objetivo
+
+# --- Definição da Classe Particula ---
+class Particula:
+    """
+    Representa uma única partícula no algoritmo de Otimização por Enxame de Partículas (PSO).
+    Cada partícula possui uma posição, velocidade e a melhor posição já encontrada por ela.
+    """
+    def __init__(self, limites):
+        """
+        Construtor da classe Particula.
+        Inicializa a partícula com uma posição e velocidade aleatórias dentro dos limites definidos.
+        """
+        # A posição da partícula é um array NumPy de 2 dimensões (x, y) gerado aleatoriamente.
+        self.posicao_i = np.array([random.uniform(limites[0], limites[1]),
+                                   random.uniform(limites[0], limites[1])])
+        
+        # A velocidade da partícula é um array NumPy de 2 dimensões (vx, vy) gerado aleatoriamente.
+        # A velocidade inicial é geralmente menor que a faixa dos limites de posição.
+        self.velocidade_i = np.array([random.uniform(-1, 1), random.uniform(-1, 1)])
+        
+        # Melhor posição que esta partícula já encontrou (inicialmente é a posição atual).
+        self.melhor_posicao_i = self.posicao_i.copy()
+        
+        # O valor da função objetivo na melhor_posicao_i (inicialmente infinito, pois queremos minimizar).
+        self.melhor_valor_i = float('inf')
+
+# --- Definição da Classe PSO (Particle Swarm Optimization) ---
 class PSO:
-    # Construtor da classe PSO, que inicializa os parâmetros do algoritmo.
-    def __init__(self, limites, num_particulas, num_iteracoes, iteracoes_sem_melhora_limite, tolerancia, c1_param, c2_param, w_max_param, w_min_param):
-        self.limites = limites # Limites do espaço de busca (ex: [(-500, 500), (-500, 500)] para x e y).
-        self.num_particulas = num_particulas # Número de partículas no enxame.
-        self.num_iteracoes = num_iteracoes # Número máximo de iterações do algoritmo.
-        self.iteracoes_sem_melhora_limite = iteracoes_sem_melhora_limite # Limite de iterações sem melhora para critério de parada.
-        self.tolerancia = tolerancia # Valor mínimo de mudança para considerar convergência.
-
-        # NOVO: Armazena os parâmetros passados no construtor como atributos da instância
-        self.c1 = c1_param # Coeficiente de aceleração cognitiva (influência da melhor posição da partícula).
-        self.c2 = c2_param # Coeficiente de aceleração social (influência da melhor posição global do enxame).
-        self.w_max = w_max_param # Peso de inércia máximo (influência da velocidade anterior).
-        self.w_min = w_min_param # Peso de inércia mínimo (influência da velocidade anterior).
-
-        global_op_counter.reset() # Reseta os contadores globais de operações (multiplicações e divisões).
-        # Cria um "wrapper" para a função objetivo que também conta suas avaliações.
-        self.funcao_w4_wrapper = FuncaoObjetivoWrapper(funcao_w4, global_op_counter)
-
-        melhor_valor_g = float('inf') # Inicializa o melhor valor global encontrado como infinito (para minimização).
-        melhor_posicao_g = [] # Inicializa a melhor posição global como uma lista vazia.
+    """
+    Implementa o algoritmo de Otimização por Enxame de Partículas (PSO).
+    Gerencia o enxame de partículas, atualiza suas posições e velocidades,
+    e busca o mínimo global da função objetivo.
+    """
+    def __init__(self, funcao_objetivo, limites, num_particulas, num_iteracoes, w, c1, c2, tolerancia=1e-6, iteracoes_sem_melhora_limite=50):
+        """
+        Construtor da classe PSO.
         
-        self.avaliacoes_pso_minimo_global = 0 # Armazena o número de avaliações quando o melhor global foi *encontrado*.
-        self.operacoes_pso_minimo_global_mult = 0 # Armazena multiplicações quando o melhor global foi *encontrado*.
-        self.operacoes_pso_minimo_global_div = 0 # Armazena divisões quando o melhor global foi *encontrado*.
-
-        iteracoes_sem_melhora = 0 # Contador para iterações consecutivas sem melhora significativa.
+        Parâmetros:
+            funcao_objetivo (callable): A função a ser otimizada (minimizada).
+            limites (tuple): Uma tupla (min, max) definindo os limites do espaço de busca.
+            num_particulas (int): O número de partículas no enxame.
+            num_iteracoes (int): O número máximo de iterações do algoritmo.
+            w (float): Coeficiente de inércia.
+            c1 (float): Coeficiente de aceleração cognitiva (influência da melhor posição da própria partícula).
+            c2 (float): Coeficiente de aceleração social (influência da melhor posição global do enxame).
+            tolerancia (float): Tolerância para o critério de parada por convergência.
+            iteracoes_sem_melhora_limite (int): Número de iterações sem melhora significativa para parar o algoritmo.
+        """
+        self.funcao_objetivo = funcao_objetivo # Função objetivo (W4, por exemplo)
+        self.limites = limites # Limites do espaço de busca (ex: (-500, 500))
+        self.num_particulas = num_particulas # Número de partículas
+        self.num_iteracoes = num_iteracoes # Número máximo de iterações
+        self.w_max = w # Coeficiente de inércia (máximo, para inércia decrescente)
+        self.w_min = 0.4 # Coeficiente de inércia mínimo
+        self.c1 = c1 # Coeficiente cognitivo
+        self.c2 = c2 # Coeficiente social
+        self.tolerancia = tolerancia # Tolerância para convergência
+        self.iteracoes_sem_melhora_limite = iteracoes_sem_melhora_limite # Limite para parada por falta de melhora
         
-        enxame = [] # Lista para armazenar as partículas do enxame.
-        # Loop para criar e adicionar as partículas ao enxame.
-        for i in range(self.num_particulas):
-            # Cria uma nova instância de Enxame (partícula) com os limites e parâmetros.
-            enxame.append(Enxame(self.limites, self.c1, self.c2, self.w_max, self.w_min))
+        # Inicialização da melhor posição global e seu valor
+        self.melhor_posicao_global = None # A melhor posição já encontrada por qualquer partícula no enxame
+        self.melhor_valor_global = float('inf') # O valor da função objetivo na melhor_posicao_global (inicialmente infinito)
 
-        # Configuração inicial do gráfico 3D.
-        fig = plt.figure(figsize=(11, 8)) # Cria uma nova figura para o gráfico.
-        ax = fig.add_subplot(111, projection='3d') # Adiciona um subplot 3D à figura.
-        plt.subplots_adjust(right=0.7) # Ajusta o layout para deixar espaço para a legenda à direita.
+        # Contadores de estatísticas para o melhor global
+        self.avaliacoes_pso_minimo_global = 0 # Avaliações da função quando o melhor global foi encontrado
+        self.operacoes_pso_minimo_global_mult = 0 # Multiplicações quando o melhor global foi encontrado
+        self.operacoes_pso_minimo_global_div = 0 # Divisões quando o melhor global foi encontrado
 
-        i = 0 # Inicializa o contador de iterações.
-        # Loop principal do algoritmo PSO, que continua até o número máximo de iterações ou convergência.
-        while i < self.num_iteracoes:
-            valor_global_antes_atualizacao = melhor_valor_g # Guarda o melhor valor global da iteração anterior para comparação.
+        # Reseta os contadores globais de operações no início da execução do PSO
+        global_op_counter.reset()
+        # Cria um "wrapper" para a função objetivo que também conta suas avaliações
+        self.funcao_w4_wrapper = FuncaoObjetivoWrapper(self.funcao_objetivo, global_op_counter)
 
-            # Loop para avaliar cada partícula no enxame.
-            for j in range(self.num_particulas):
-                # Avalia a posição atual da partícula usando a função objetivo (e conta as avaliações).
-                enxame[j].avaliar(self.funcao_w4_wrapper)
+    def inicializar_enxame(self):
+        """
+        Cria e inicializa todas as partículas no enxame.
+        """
+        enxame = [] # Lista para armazenar as partículas
+        for _ in range(self.num_particulas): # Loop para criar o número especificado de partículas
+            enxame.append(Particula(self.limites)) # Adiciona uma nova partícula à lista
+        return enxame # Retorna o enxame inicializado
 
-                # Verifica se a posição atual da partícula é melhor que a melhor global encontrada até agora.
-                if enxame[j].valor_atual_i < melhor_valor_g:
-                    melhor_posicao_g = list(enxame[j].posicao_i) # Atualiza a melhor posição global.
-                    melhor_valor_g = float(enxame[j].valor_atual_i) # Atualiza o melhor valor global.
-                    # Registra o número de avaliações e operações *no momento* em que o melhor global foi encontrado.
+    def executar(self):
+        """
+        Executa o algoritmo PSO principal.
+        Gera o enxame, itera, atualiza as partículas e encontra o mínimo.
+        """
+        enxame = self.inicializar_enxame() # Inicializa o enxame de partículas
+        
+        iteracoes_sem_melhora = 0 # Contador para iterações consecutivas sem melhora significativa
+        ultima_melhor_valor_global = float('inf') # Armazena o último melhor valor global para o critério de convergência
+        
+        # --- INICIALIZAÇÃO DO GRÁFICO PARA PSO ---
+        fig = plt.figure(figsize=(11, 8)) # Cria uma nova figura para o gráfico
+        ax = fig.add_subplot(111, projection='3d') # Adiciona um subplot 3D à figura
+        plt.subplots_adjust(right=0.7) # Ajusta o layout para deixar espaço para a legenda à direita
+
+        i = 0 # Contador de iterações
+        while i < self.num_iteracoes: # Loop principal do algoritmo PSO, uma iteração por vez
+            # Atualiza o coeficiente de inércia 'w' linearmente decrescente ao longo das iterações
+            # Isso ajuda a equilibrar exploração (w alto no início) e explotação (w baixo no final)
+            self.w = self.w_max - (self.w_max - self.w_min) * i / self.num_iteracoes
+            global_op_counter.add_mult(1) # Contabiliza a multiplicação na fórmula do 'w'
+            global_op_counter.add_div(1) # Contabiliza a divisão na fórmula do 'w'
+
+            for particula in enxame: # Itera sobre cada partícula no enxame
+                # Avalia a função objetivo na posição atual da partícula
+                valor_atual = self.funcao_w4_wrapper(particula.posicao_i[0], particula.posicao_i[1])
+                
+                # Atualiza a melhor posição local da partícula se o valor atual for melhor
+                if valor_atual < particula.melhor_valor_i:
+                    particula.melhor_valor_i = valor_atual # Atualiza o melhor valor local
+                    particula.melhor_posicao_i = particula.posicao_i.copy() # Atualiza a melhor posição local
+
+                # Atualiza a melhor posição global do enxame se a melhor posição local da partícula for melhor
+                if valor_atual < self.melhor_valor_global:
+                    self.melhor_valor_global = valor_atual # Atualiza o melhor valor global
+                    self.melhor_posicao_global = particula.posicao_i.copy() # Atualiza a melhor posição global
+                    
+                    # Registra as avaliações e operações *no momento* em que o melhor global foi encontrado
                     self.avaliacoes_pso_minimo_global = self.funcao_w4_wrapper.evaluations
                     self.operacoes_pso_minimo_global_mult = global_op_counter.multiplications
                     self.operacoes_pso_minimo_global_div = global_op_counter.divisions
-
-            # Lógica de parada por convergência (se a melhora global for menor que a tolerância).
-            if i > 0 and abs(melhor_valor_g - valor_global_antes_atualizacao) < self.tolerancia:
-                iteracoes_sem_melhora += 1 # Incrementa o contador de iterações sem melhora.
+            
+            # --- Lógica de parada por convergência (se a melhora global for menor que a tolerância) ---
+            if i > 0 and abs(self.melhor_valor_global - ultima_melhor_valor_global) < self.tolerancia:
+                iteracoes_sem_melhora += 1 # Incrementa o contador de iterações sem melhora
             else:
-                iteracoes_sem_melhora = 0 # Reseta o contador se houve melhora.
+                iteracoes_sem_melhora = 0 # Reseta o contador se houve melhora
+                
+            ultima_melhor_valor_global = self.melhor_valor_global # Atualiza o último melhor valor global para a próxima comparação
 
-            # Verifica se o limite de iterações sem melhora foi atingido.
-            if iteracoes_sem_melhora >= self.iteracoes_sem_melhora_limite:
+            if iteracoes_sem_melhora >= self.iteracoes_sem_melhora_limite: # Verifica se o limite foi atingido
                 print(f"\n[PSO] Parada por convergência: Mudança no melhor valor global menor que {self.tolerancia} por {self.iteracoes_sem_melhora_limite} iterações.")
-                break # Sai do loop principal se houver convergência.
+                break # Sai do loop principal se houver convergência
 
-            # Loop para atualizar a velocidade e posição de cada partícula.
-            for j in range(self.num_particulas):
-                # Atualiza a velocidade da partícula com base na melhor posição global e na sua própria melhor posição.
-                enxame[j].atualizar_velocidade(melhor_posicao_g, i, self.num_iteracoes)
-                # Atualiza a posição da partícula com base em sua nova velocidade e limites.
-                enxame[j].atualizar_posicao(self.limites)
+            # Atualiza a velocidade e posição de cada partícula
+            for particula in enxame:
+                # Gerar números aleatórios r1 e r2 para os componentes cognitivo e social
+                r1 = random.random()
+                r2 = random.random()
+                
+                # Componente cognitivo: puxa a partícula para sua melhor posição local
+                # C1 * r1 * (p_best - current_pos)
+                cognitive_component = self.c1 * r1 * (particula.melhor_posicao_i - particula.posicao_i)
+                global_op_counter.add_mult(2) # Contabiliza 2 multiplicações (uma para cada dimensão x,y)
+                
+                # Componente social: puxa a partícula para a melhor posição global do enxame
+                # C2 * r2 * (g_best - current_pos)
+                social_component = self.c2 * r2 * (self.melhor_posicao_global - particula.posicao_i)
+                global_op_counter.add_mult(2) # Contabiliza 2 multiplicações (uma para cada dimensão x,y)
 
-            # MODIFICADO: Agora pego os valores de c1, c2, w_max, w_min dos atributos da instância self.
-            # Dicionário com parâmetros e estatísticas para passar ao gráfico.
+                # Atualiza a velocidade da partícula
+                # nova_velocidade = w * velocidade_atual + componente_cognitivo + componente_social
+                particula.velocidade_i = (self.w * particula.velocidade_i +
+                                         cognitive_component +
+                                         social_component)
+                global_op_counter.add_mult(2) # Contabiliza 2 multiplicações (w * velocidade_atual para cada dimensão)
+
+                # Limita a velocidade para evitar que as partículas "voem" muito longe
+                particula.velocidade_i = np.clip(particula.velocidade_i, -self.limites[1], self.limites[1])
+                
+                # Atualiza a posição da partícula
+                # nova_posicao = posicao_atual + nova_velocidade
+                particula.posicao_i = particula.posicao_i + particula.velocidade_i
+                
+                # Garante que a partícula permaneça dentro dos limites do espaço de busca
+                particula.posicao_i = np.clip(particula.posicao_i, self.limites[0], self.limites[1])
+            
+            # --- Dicionário com parâmetros e estatísticas para passar ao gráfico ---
+            # Este dicionário é atualizado a cada iteração com os valores correntes
             pso_params_for_plot = {
                 "c1": self.c1,
                 "c2": self.c2,
@@ -92,77 +189,82 @@ class PSO:
                 "w_min": self.w_min,
                 "iteracoes_totais": self.num_iteracoes,
                 "num_particulas": self.num_particulas,
-                "avaliacoes_funcao": self.funcao_w4_wrapper.evaluations, # Avaliações totais até o momento.
-                "multiplicacoes_total": global_op_counter.multiplications, # Multiplicações totais até o momento.
-                "divisoes_total": global_op_counter.divisions, # Divisões totais até o momento.
-                "avaliacoes_minimo_global": self.avaliacoes_pso_minimo_global, # Avaliações no momento do melhor global.
-                "multiplicacoes_minimo_global": self.operacoes_pso_minimo_global_mult, # Multiplicações no momento do melhor global.
-                "divisoes_minimo_global": self.operacoes_pso_minimo_global_div # Divisões no momento do melhor global.
+                "avaliacoes_funcao": self.funcao_w4_wrapper.evaluations, # Avaliações totais da função objetivo até o momento
+                "multiplicacoes_total": global_op_counter.multiplications, # Multiplicações totais até o momento
+                "divisoes_total": global_op_counter.divisions, # Divisões totais até o momento
+                "avaliacoes_minimo_global": self.avaliacoes_pso_minimo_global, # Avaliações da função quando o melhor global foi encontrado
+                "multiplicacoes_minimo_global": self.operacoes_pso_minimo_global_mult, # Multiplicações quando o melhor global foi encontrado
+                "divisoes_minimo_global": self.operacoes_pso_minimo_global_div, # Divisões quando o melhor global foi encontrado
+                "iteracoes_sem_melhora": iteracoes_sem_melhora, # Contador de iterações consecutivas sem melhora
+                "limite_iteracoes_sem_melhora": self.iteracoes_sem_melhora_limite # NOVO: O limite definido para iterações sem melhora
             }
 
-            # Chama a função para desenhar o gráfico da iteração atual.
-            GraficoPSO(enxame, i+1, ax, melhor_valor_g, pso_params=pso_params_for_plot)
+            # Chama a função para desenhar o gráfico da iteração atual
+            GraficoPSO(enxame, i+1, ax, self.melhor_valor_global, pso_params=pso_params_for_plot)
             i += 1 # Incrementa o contador de iterações.
 
-        # --- Impressão dos Resultados Finais do PSO ---
-        output_lines = [] # Lista para armazenar as linhas de saída.
-        output_lines.append("\n--- Resultados Finais do PSO ---")
-        output_lines.append(f'POSICAO FINAL (PSO): {melhor_posicao_g}') # Posição final da melhor solução global.
-        output_lines.append(f'RESULTADO FINAL (PSO): {melhor_valor_g:.4f}') # Valor final da função para a melhor solução.
-        output_lines.append(f'Iterações executadas (PSO): {i}') # Número total de iterações executadas.
-        output_lines.append(f'Avaliações da função objetivo (PSO): {self.funcao_w4_wrapper.evaluations}') # Avaliações totais (convergência).
-        output_lines.append(f'Operações de Multiplicação (PSO): {global_op_counter.multiplications}') # Multiplicações totais (convergência).
-        output_lines.append(f'Operações de Divisão (PSO): {global_op_counter.divisions}') # Divisões totais (convergência).
-        output_lines.append(f'Avaliações para o "melhor global" (PSO): {self.avaliacoes_pso_minimo_global}') # Avaliações no momento do melhor global.
-        output_lines.append(f'Multiplicações para o "melhor global" (PSO): {self.operacoes_pso_minimo_global_mult}') # Multiplicações no momento do melhor global.
-        output_lines.append(f'Divisões para o "melhor global" (PSO): {self.operacoes_pso_minimo_global_div}') # Divisões no momento do melhor global.
-        output_lines.append("--------------------------------")
+        # --- Salva a imagem do gráfico final ---
+        output_folder_images = "resultados_pso_graficos" # Define a pasta para salvar as imagens
+        os.makedirs(output_folder_images, exist_ok=True) # Cria a pasta se ela não existir
 
-        # Imprime as linhas de resultado no console.
-        for line in output_lines:
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S") # Gera um timestamp para o nome do arquivo
+        # Nome do arquivo inclui o timestamp e o melhor valor global para fácil identificação
+        image_name = f"PSO_final_plot_{timestamp}_Valor_{self.melhor_valor_global:.4f}.png"
+        image_path = os.path.join(output_folder_images, image_name)
+
+        plt.savefig(image_path, dpi=300, bbox_inches='tight') # Salva a figura atual com alta resolução
+        print(f"Gráfico final do PSO salvo em: {image_path}")
+        
+        plt.close(fig) # Fecha a janela do gráfico para liberar recursos
+
+        # --- Prepara as estatísticas para impressão e salvamento ---
+        stats_output = [] # Lista para armazenar as linhas de saída
+        stats_output.append("--- Resultados Finais do Algoritmo PSO ---")
+        stats_output.append(f"Melhor solução encontrada (PSO): {self.melhor_posicao_global}") # Posição do mínimo
+        stats_output.append(f"Valor da função para a melhor solução (PSO): {self.melhor_valor_global:.4f}") # Valor do mínimo
+        stats_output.append(f"Iterações executadas (PSO): {i}") # Número total de iterações executadas
+        stats_output.append(f"Avaliações da função objetivo (PSO): {self.funcao_w4_wrapper.evaluations}") # Avaliações totais até a convergência
+        stats_output.append(f"Operações de Multiplicação (PSO): {global_op_counter.multiplications}") # Multiplicações totais
+        stats_output.append(f"Operações de Divisão (PSO): {global_op_counter.divisions}") # Divisões totais
+        stats_output.append(f"Avaliações para o 'melhor global' (PSO): {self.avaliacoes_pso_minimo_global}") # Avaliações no momento do melhor global
+        stats_output.append(f"Multiplicações para o 'melhor global' (PSO): {self.operacoes_pso_minimo_global_mult}") # Multiplicações no momento do melhor global
+        stats_output.append(f"Divisões para o 'melhor global' (PSO): {self.operacoes_pso_minimo_global_div}") # Divisões no momento do melhor global
+        stats_output.append("--------------------------------------------")
+
+        for line in stats_output: # Imprime as linhas de resultado no console
             print(line)
 
-        plt.show() # Exibe o gráfico final.
+        # Salva as estatísticas em um arquivo .txt
+        output_folder_text = "resultados_pso" # Define o nome da pasta para resultados de texto
+        os.makedirs(output_folder_text, exist_ok=True) # Cria a pasta se não existir
 
-        # Salvar resultados em um arquivo de texto.
-        output_folder = "resultados_pso" # Define o nome da pasta para salvar os resultados.
-        os.makedirs(output_folder, exist_ok=True) # Cria a pasta se ela não existir.
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S") # Gera um timestamp para o nome do arquivo.
-        file_name = f"resultados_pso_{timestamp}.txt" # Define o nome do arquivo.
-        file_path = os.path.join(output_folder, file_name) # Cria o caminho completo do arquivo.
+        # Reutiliza o mesmo timestamp usado para o gráfico para manter consistência nos nomes dos arquivos
+        file_name = f"estatisticas_pso_{timestamp}.txt" # Define o nome do arquivo de texto
+        output_path = os.path.join(output_folder_text, file_name) # Cria o caminho completo do arquivo
 
-        # Escreve os resultados no arquivo de texto.
-        with open(file_path, "w") as f:
-            for line in output_lines:
-                f.write(line + "\n")
-        print(f"Resultados detalhados salvos em: {file_path}") # Informa onde os resultados foram salvos.
+        with open(output_path, "w") as f: # Abre o arquivo para escrita
+            for line in stats_output:
+                f.write(line + "\n") # Escreve cada linha no arquivo
 
+        print(f"\nEstatísticas salvas em: {output_path}") # Informa onde o arquivo foi salvo
 
-# Este bloco só será executado se PSO.py for o script principal rodado (ex: python PSO.py).
+        return self.melhor_posicao_global, self.melhor_valor_global, i # Retorna os principais resultados do algoritmo
+
+# Este bloco só será executado se PSO.py for o script principal rodado (ex: python PSO.py)
 if __name__ == "__main__":
-    print("\n--- Teste direto da Otimização por Enxame de Partículas (se executado como script principal) ---")
+    print("\n--- Teste direto do Algoritmo PSO (se executado como script principal) ---")
+    # Define os parâmetros de teste para uma execução direta
+    limites_funcao = (-500, 500) # Limites para a função W4
+    num_particulas = 50 # Número de partículas
+    num_iteracoes = 200 # Número de iterações
+    w = 0.9 # Inércia inicial
+    c1 = 2 # Coeficiente cognitivo
+    c2 = 2 # Coeficiente social
+    tolerancia = 1e-6 # Tolerância para critério de parada
+    iteracoes_sem_melhora_limite = 20 # Limite de iterações sem melhora para parar
+
+    # Cria uma instância do otimizador PSO
+    otimizador_pso = PSO(funcao_w4, limites_funcao, num_particulas, num_iteracoes, w, c1, c2, tolerancia, iteracoes_sem_melhora_limite)
     
-    # Define os parâmetros de teste para uma execução direta.
-    limites_xy = [(-500, 500), (-500, 500)] # Limites para as variáveis x e y da função.
-    num_particulas_pso = 15 # Número de partículas para o teste.
-    num_iteracoes_pso = 100 # Número de iterações para o teste.
-    iteracoes_sem_melhora_limite_pso = 50 # Limite de iterações sem melhora para o teste.
-    tolerancia_pso = 1e-6 # Tolerância para convergência para o teste.
-
-    c1_pso = 2.0 # Parâmetro c1 para o teste.
-    c2_pso = 2.0 # Parâmetro c2 para o teste.
-    w_max_pso = 0.9 # Parâmetro w_max para o teste.
-    w_min_pso = 0.4 # Parâmetro w_min para o teste.
-
-    # Cria uma instância da classe PSO e inicia a otimização com os parâmetros de teste.
-    pso_instance = PSO(
-        limites=limites_xy,
-        num_particulas=num_particulas_pso,
-        num_iteracoes=num_iteracoes_pso,
-        iteracoes_sem_melhora_limite=iteracoes_sem_melhora_limite_pso,
-        tolerancia=tolerancia_pso,
-        c1_param=c1_pso,
-        c2_param=c2_pso,
-        w_max_param=w_max_pso,
-        w_min_param=w_min_pso
-    )
+    # Executa o algoritmo PSO
+    melhor_posicao, melhor_valor, iteracoes_finais = otimizador_pso.executar()

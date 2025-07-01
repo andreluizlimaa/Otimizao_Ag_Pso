@@ -1,0 +1,11 @@
+--- Resultados Finais do Algoritmo Genético ---
+Melhor solução encontrada (AG): [0.03138762 0.02099767]
+Valor da função para a melhor solução (AG): -498.8589
+Gerações executadas (AG): 71
+Avaliações da função objetivo (AG): 2520
+Operações de Multiplicação (AG): 197252
+Operações de Divisão (AG): 25735
+Avaliações para o 'melhor global' (AG): 1820
+Multiplicações para o 'melhor global' (AG): 142066
+Divisões para o 'melhor global' (AG): 18535
+--------------------------------------------
