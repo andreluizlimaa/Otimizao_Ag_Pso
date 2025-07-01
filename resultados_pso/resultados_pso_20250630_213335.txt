@@ -1,0 +1,12 @@
+
+--- Resultados Finais do PSO ---
+POSICAO FINAL (PSO): [np.float64(-0.002799061444567364), np.float64(0.0006001423118788007)]
+RESULTADO FINAL (PSO): -498.9898
+Iterações executadas (PSO): 100
+Avaliações da função objetivo (PSO): 1500
+Operações de Multiplicação (PSO): 128300
+Operações de Divisão (PSO): 17000
+Avaliações para o "melhor global" (PSO): 1498
+Multiplicações para o "melhor global" (PSO): 127511
+Divisões para o "melhor global" (PSO): 16895
+--------------------------------

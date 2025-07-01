@@ -1,22 +1,21 @@
-# Enxame.py (com as linhas add_add restauradas e agora funcionando)
-
 import random # Importa a biblioteca 'random' para gerar números aleatórios, essenciais para a inicialização e atualização das partículas.
 import numpy as np # Importa a biblioteca 'numpy' como 'np', fundamental para operações com arrays numéricos de forma eficiente (vetorização).
 from utils import global_op_counter # Importa 'global_op_counter' do módulo 'utils', que é um objeto global para contar operações aritméticas (multiplicações, divisões, adições/subtrações).
 
 class Enxame: # Define a classe 'Enxame', que representa uma única partícula dentro do algoritmo de Otimização por Enxame de Partículas (PSO).
-    def __init__(self, limites): # Define o método construtor da classe 'Enxame'. Ele é chamado ao criar uma nova partícula e recebe 'limites' como argumento.
+    # MODIFICADO: Adicionados c1, c2, w_max, w_min como parâmetros do construtor
+    def __init__(self, limites, c1, c2, w_max, w_min): # Define o método construtor da classe 'Enxame'. Ele é chamado ao criar uma nova partícula.
         # Inicializa a posição atual da partícula como um array NumPy.
         # random.uniform(a, b) gera um número de ponto flutuante aleatório entre 'a' e 'b'.
         # 'limites[0][0]' e 'limites[0][1]' são os limites mínimo e máximo para a coordenada x.
         # 'limites[1][0]' e 'limites[1][1]' são os limites mínimo e máximo para a coordenada y.
         self.posicao_i = np.array([random.uniform(limites[0][0], limites[0][1]),
-                                   random.uniform(limites[1][0], limites[1][1])])
+                                     random.uniform(limites[1][0], limites[1][1])])
         
         # Inicializa a velocidade atual da partícula como um array NumPy.
         # As velocidades são iniciadas aleatoriamente entre -1 e 1.
         self.velocidade_i = np.array([random.uniform(-1, 1), 
-                                      random.uniform(-1, 1)])
+                                       random.uniform(-1, 1)])
         
         # 'melhor_posicao_i' armazena a melhor posição (com o menor valor da função objetivo)
         # que esta partícula encontrou até o momento. É inicializada com a posição atual.
@@ -28,12 +27,12 @@ class Enxame: # Define a classe 'Enxame', que representa uma única partícula d
         # Inicializado com infinito.
         self.valor_atual_i = float('inf')
 
-        # 'c1' é a constante de aceleração cognitiva (ou fator de peso pessoal), que influencia
-        # o quanto a partícula é atraída pela sua própria melhor experiência.
-        self.c1 = 1
-        # 'c2' é a constante de aceleração social (ou fator de peso global), que influencia
-        # o quanto a partícula é atraída pela melhor experiência de todo o enxame.
-        self.c2 = 1
+        # MODIFICADO: As constantes c1, c2, w_max, w_min agora são atributos da instância,
+        # recebidos via construtor.
+        self.c1 = c1 # Constante de aceleração cognitiva (peso pessoal).
+        self.c2 = c2 # Constante de aceleração social (peso global).
+        self.w_max = w_max # Valor máximo para o peso de inércia 'w'.
+        self.w_min = w_min # Valor mínimo para o peso de inércia 'w'.
 
     def avaliar(self, funcao_wrapper): # Define o método 'avaliar', que calcula a aptidão (valor da função objetivo) da posição atual da partícula.
         x = self.posicao_i[0] # Extrai a coordenada x da posição atual da partícula.
@@ -52,18 +51,18 @@ class Enxame: # Define a classe 'Enxame', que representa uma única partícula d
         # 'iteracao_atual' é a iteração atual do PSO.
         # 'num_iteracoes' é o número total de iterações do PSO.
 
-        w_max = 0.9 # Valor máximo para o peso de inércia 'w'.
-        w_min = 0.4 # Valor mínimo para o peso de inércia 'w'.
+        # MODIFICADO: w_max e w_min agora são acessados como atributos da instância (self.w_max, self.w_min).
+        # Eles não são mais definidos aqui dentro da função, mas passados no construtor da Enxame.
         
         # --- Contagem de operações para o cálculo de 'w' ---
         # A linha abaixo conta as operações aritméticas envolvidas no cálculo de 'w'.
         global_op_counter.add_div(1) # Adiciona 1 à contagem de divisões (para '/ num_iteracoes').
-        global_op_counter.add_mult(1) # Adiciona 1 à contagem de multiplicações (para '* (w_max - w_min)').
-        global_op_counter.add_add(2) # Adiciona 2 à contagem de adições/subtrações (para '(0.9 - 0.4)' e 'w_max - resultado').
+        global_op_counter.add_mult(1) # Adiciona 1 à contagem de multiplicações (para '* (self.w_max - self.w_min)').
+        global_op_counter.add_add(2) # Adiciona 2 à contagem de adições/subtrações (para '(self.w_max - self.w_min)' e 'self.w_max - resultado').
         
         # Calcula o peso de inércia 'w'. Ele decai linearmente de 'w_max' para 'w_min' ao longo das iterações.
         # Um 'w' decrescente ajuda a promover a exploração no início e a explotação no final.
-        w = w_max - (iteracao_atual / num_iteracoes) * (w_max - w_min)
+        w = self.w_max - (iteracao_atual / num_iteracoes) * (self.w_max - self.w_min)
 
         r1 = random.random() # Gera um número aleatório 'r1' (entre 0 e 1) para a componente cognitiva.
         r2 = random.random() # Gera um número aleatório 'r2' (entre 0 e 1) para a componente social.
@@ -100,6 +99,6 @@ class Enxame: # Define a classe 'Enxame', que representa uma única partícula d
         # Verifica se a partícula atingiu ou ultrapassou os limites na coordenada x.
         if self.posicao_i[0] == limites[0][0] or self.posicao_i[0] == limites[0][1]:
             self.velocidade_i[0] = 0 # Se sim, zera a componente x da velocidade para "parar" a partícula no limite.
-        # Verifica se a partícula atingiu ou ultrapassou os limites na coordenada y.
+        # Verifica se a partícula atingiu ou ultrapassou os limites nos limites na coordenada y.
         if self.posicao_i[1] == limites[1][0] or self.posicao_i[1] == limites[1][1]:
             self.velocidade_i[1] = 0 # Se sim, zera a componente y da velocidade para "parar" a partícula no limite.
