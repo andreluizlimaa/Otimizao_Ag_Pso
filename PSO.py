@@ -44,7 +44,7 @@ class PSO:
     Gerencia o enxame de partículas, atualiza suas posições e velocidades,
     e busca o mínimo global da função objetivo.
     """
-    def __init__(self, funcao_objetivo, limites, num_particulas, num_iteracoes, w, c1, c2, tolerancia=1e-6, iteracoes_sem_melhora_limite=50):
+    def __init__(self, funcao_objetivo, limites, num_particulas, num_iteracoes, w_max, w_min, c1, c2, tolerancia=1e-6, iteracoes_sem_melhora_limite=50):
         """
         Construtor da classe PSO.
         
@@ -63,8 +63,8 @@ class PSO:
         self.limites = limites # Limites do espaço de busca (ex: (-500, 500))
         self.num_particulas = num_particulas # Número de partículas
         self.num_iteracoes = num_iteracoes # Número máximo de iterações
-        self.w_max = w # Coeficiente de inércia (máximo, para inércia decrescente)
-        self.w_min = 0.4 # Coeficiente de inércia mínimo
+        self.w_max = w_max # Coeficiente de inércia (máximo, para inércia decrescente)
+        self.w_min = w_min # Coeficiente de inércia mínimo
         self.c1 = c1 # Coeficiente cognitivo
         self.c2 = c2 # Coeficiente social
         self.tolerancia = tolerancia # Tolerância para convergência
@@ -253,18 +253,18 @@ class PSO:
 # Este bloco só será executado se PSO.py for o script principal rodado (ex: python PSO.py)
 if __name__ == "__main__":
     print("\n--- Teste direto do Algoritmo PSO (se executado como script principal) ---")
-    # Define os parâmetros de teste para uma execução direta
     limites_funcao = (-500, 500) # Limites para a função W4
-    num_particulas = 50 # Número de partículas
-    num_iteracoes = 200 # Número de iterações
-    w = 0.9 # Inércia inicial
+    num_particulas = 20 # Número de partículas
+    num_iteracoes = 100 # Número de iterações
+    w_max = 0.7 # Valor máximo para o peso de inércia 'w'
+    w_min = 0.2 # Valor minimo para o peso de inércia 'w'
     c1 = 2 # Coeficiente cognitivo
     c2 = 2 # Coeficiente social
     tolerancia = 1e-6 # Tolerância para critério de parada
     iteracoes_sem_melhora_limite = 20 # Limite de iterações sem melhora para parar
 
     # Cria uma instância do otimizador PSO
-    otimizador_pso = PSO(funcao_w4, limites_funcao, num_particulas, num_iteracoes, w, c1, c2, tolerancia, iteracoes_sem_melhora_limite)
+    otimizador_pso = PSO(funcao_w4, limites_funcao, num_particulas, num_iteracoes, w_max, w_min, c1, c2, tolerancia, iteracoes_sem_melhora_limite)
     
     # Executa o algoritmo PSO
     melhor_posicao, melhor_valor, iteracoes_finais = otimizador_pso.executar()

@@ -1,0 +1,11 @@
+--- Resultados Finais do Algoritmo PSO ---
+Melhor solução encontrada (PSO): [-1.95830758e-05  1.18145311e-05]
+Valor da função para a melhor solução (PSO): -498.9999
+Iterações executadas (PSO): 100
+Avaliações da função objetivo (PSO): 2000
+Operações de Multiplicação (PSO): 167900
+Operações de Divisão (PSO): 20600
+Avaliações para o 'melhor global' (PSO): 1987
+Multiplicações para o 'melhor global' (PSO): 166488
+Divisões para o 'melhor global' (PSO): 20430
+--------------------------------------------

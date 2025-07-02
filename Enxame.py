@@ -3,7 +3,6 @@ import numpy as np # Importa a biblioteca 'numpy' como 'np', fundamental para op
 from utils import global_op_counter # Importa 'global_op_counter' do módulo 'utils', que é um objeto global para contar operações aritméticas (multiplicações, divisões, adições/subtrações).
 
 class Enxame: # Define a classe 'Enxame', que representa uma única partícula dentro do algoritmo de Otimização por Enxame de Partículas (PSO).
-    # MODIFICADO: Adicionados c1, c2, w_max, w_min como parâmetros do construtor
     def __init__(self, limites, c1, c2, w_max, w_min): # Define o método construtor da classe 'Enxame'. Ele é chamado ao criar uma nova partícula.
         # Inicializa a posição atual da partícula como um array NumPy.
         # random.uniform(a, b) gera um número de ponto flutuante aleatório entre 'a' e 'b'.

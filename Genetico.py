@@ -349,8 +349,8 @@ def algoritmo_genetico(tamanho_populacao, limites, num_geracoes, taxa_cruzamento
 if __name__ == "__main__":
     print("\n--- Teste direto do Algoritmo Genético (se executado como script principal) ---")
     # Define os parâmetros de teste para uma execução direta.
-    tamanho_populacao = 35
     limites = (-500, 500)
+    tamanho_populacao = 35
     num_geracoes = 200
     taxa_cruzamento = 0.7
     taxa_mutacao = 0.01
