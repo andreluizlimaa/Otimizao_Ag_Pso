@@ -1,3 +1,4 @@
+# Grafico.py
 # Importa as bibliotecas necessárias para plotagem
 import numpy as np # NumPy para operações numéricas, especialmente para meshgrid e arrays
 import matplotlib.pyplot as plt # Matplotlib para criação e exibição de gráficos
@@ -64,13 +65,13 @@ def GraficoPSO(enxame, iteracao, ax, melhor_valor_global, pso_params=None):
             f'W_max: {pso_params["w_max"]:.2f}\n'
             f'W_min: {pso_params["w_min"]:.2f}\n'
             f'Partículas: {pso_params["num_particulas"]}\n'
-            f'Iterações Totais: {pso_params["iteracoes_totais"]}\n'
-            f'Limite It. sem melhora: {pso_params["limite_iteracoes_sem_melhora"]}\n\n' # NOVO: Limite definido
+            f'Iterações Totais: {pso_params["num_iteracoes_max"]}\n' # CHAVE CORRIGIDA AQUI
+            f'Limite It. sem melhora: {pso_params["limite_iteracoes_sem_melhora"]}\n\n'
             f'--- Estatísticas de Convergência ---\n'
             f'Avaliações FO: {pso_params["avaliacoes_funcao"]}\n'
             f'Mult: {pso_params["multiplicacoes_total"]}\n'
             f'Div: {pso_params["divisoes_total"]}\n'
-            f'Iterações sem melhora: {pso_params["iteracoes_sem_melhora"]}\n' # Contador atual
+            f'Iterações sem melhora: {pso_params["iteracoes_sem_melhora"]}\n'
             f'--- Estatísticas no Melhor Global ---\n'
             f'Avaliações: {pso_params["avaliacoes_minimo_global"]}\n'
             f'Mult: {pso_params["multiplicacoes_minimo_global"]}\n'
@@ -151,12 +152,12 @@ def GraficoAG(populacao, melhor_solucao, iteracao, ax, melhor_aptidao_global, ag
             f'Taxa Mutação: {ag_params["taxa_mutacao"]:.2f}\n'
             f'Taxa Crossover: {ag_params["taxa_crossover"]:.2f}\n'
             f'Iterações Totais: {ag_params["iteracoes_totais"]}\n'
-            f'Limite Ger. sem melhora: {ag_params["limite_geracoes_sem_melhora"]}\n\n' # NOVO: Limite definido
+            f'Limite Ger. sem melhora: {ag_params["limite_geracoes_sem_melhora"]}\n\n'
             f'--- Estatísticas de Convergência ---\n'
             f'Avaliações FO: {ag_params["avaliacoes_funcao"]}\n'
             f'Mult: {ag_params["multiplicacoes_total"]}\n'
             f'Div: {ag_params["divisoes_total"]}\n'
-            f'Gerações sem melhora: {ag_params["geracoes_sem_melhora"]}\n' # Contador atual
+            f'Gerações sem melhora: {ag_params["geracoes_sem_melhora"]}\n'
             f'--- Estatísticas no Melhor Global ---\n'
             f'Avaliações: {ag_params["avaliacoes_minimo_global"]}\n'
             f'Mult: {ag_params["multiplicacoes_minimo_global"]}\n'

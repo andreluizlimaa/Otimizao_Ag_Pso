@@ -1,0 +1,35 @@
+Análise do Algoritmo Genético (2 simulações)
+------------------------------------------------------------------
+Parâmetros do AG:
+  Tamanho populacao: 35
+  Limites: (-500, 500)
+  Num geracoes: 200
+  Taxa cruzamento: 0.7
+  Taxa mutacao: 0.01
+  Geracoes sem melhora limite: 20
+  Tolerancia: 1e-06
+------------------------------------------------------------------
+Estatísticas Sumárias das Simulações (Formato 'describe'):
+                                             mean           std            min            max
+Simulacao                                1.500000      0.707107       1.000000       2.000000
+Melhor Valor Encontrado               -498.714295      0.305409    -498.930251    -498.498338
+Gerações para Convergência             200.000000      0.000000     200.000000     200.000000
+Avaliações Função Objetivo (Total)    1750.000000    197.989899    1610.000000    1890.000000
+Multiplicações (Total)              136525.000000  15605.846661  125490.000000  147560.000000
+Divisões (Total)                     17815.000000   2036.467530   16375.000000   19255.000000
+Avaliações (no Melhor Global)         1050.000000    197.989899     910.000000    1190.000000
+Multiplicações (no Melhor Global)    81323.000000  15594.532952   70296.000000   92350.000000
+Divisões (no Melhor Global)          10615.000000   2036.467530    9175.000000   12055.000000
+------------------------------------------------------------------
+
+Sumário de Desempenho (Média e Desvio Padrão):
+                              Métrica          Media  Desvio_Padrao
+0             Melhor Valor Encontrado    -498.714295       0.305409
+1          Gerações para Convergência     200.000000       0.000000
+2  Avaliações Função Objetivo (Total)    1750.000000     197.989899
+3              Multiplicações (Total)  136525.000000   15605.846661
+4                    Divisões (Total)   17815.000000    2036.467530
+5       Avaliações (no Melhor Global)    1050.000000     197.989899
+6   Multiplicações (no Melhor Global)   81323.000000   15594.532952
+7         Divisões (no Melhor Global)   10615.000000    2036.467530
+------------------------------------------------------------------

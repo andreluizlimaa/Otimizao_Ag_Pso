@@ -81,15 +81,13 @@ def selecao_roleta(populacao, aptidoes):
 
     probabilidades = [score / total_fit for score in fit_scores] # Calcula a probabilidade de seleção de cada indivíduo.
 
-    acumulado = 0 # Variável para somar as probabilidades acumuladas.
-    roleta = [] # Lista para armazenar os limites superiores da "roleta".
+    # NOVO: Não precisamos construir a lista 'roleta' explicitamente,
+    # podemos usar um acumulador e comparar o número aleatório.
+    r = random.random() # Gera um número aleatório entre 0 e 1 (o "giro" da roleta).
+    acumulado = 0
     for i, prob in enumerate(probabilidades): # Itera sobre as probabilidades.
         acumulado += prob # Acumula a probabilidade.
-        roleta.append(acumulado) # Adiciona o valor acumulado à roleta.
-
-    r = random.random() # Gera um número aleatório entre 0 e 1 (o "giro" da roleta).
-    for i, lim_superior in enumerate(roleta): # Itera sobre os limites da roleta.
-        if r <= lim_superior: # Se o giro cair dentro do limite, seleciona o indivíduo.
+        if r <= acumulado: # Se o giro cair dentro do limite, seleciona o indivíduo.
             return populacao[i] # Retorna o indivíduo selecionado.
     
     return populacao[-1] # Retorna o último indivíduo como fallback (caso raro, evita erro).
@@ -176,7 +174,7 @@ def algoritmo_genetico(tamanho_populacao, limites, num_geracoes, taxa_cruzamento
         tolerancia (float): Tolerância para o critério de parada por convergência.
         
     Retorna:
-        tuple: (melhor_solucao, melhor_aptidao, geracoes_executadas) - os principais resultados do algoritmo.
+        dict: Um dicionário contendo os resultados e estatísticas do algoritmo.
     """
     global_op_counter.reset() # Reseta os contadores globais de operações no início do AG.
     # Cria um "wrapper" para a função objetivo que também conta suas avaliações.
@@ -196,7 +194,11 @@ def algoritmo_genetico(tamanho_populacao, limites, num_geracoes, taxa_cruzamento
     # Armazena a última melhor aptidão global para o critério de convergência.
     ultima_melhor_aptidao_global = float('inf') 
 
-    # --- INICIALIZAÇÃO DO GRÁFICO PARA AG ---
+    # --- NOVO: Listas para armazenar o histórico de convergência ---
+    historico_melhor_global_por_geracao = []
+    # historico_media_aptidoes_geracao = [] # Você pode adicionar esta se quiser a média também
+
+    # --- INICIALIZAÇÃO DO GRÁFICO PARA AG (Mantido para testar o AG individualmente) ---
     fig = plt.figure(figsize=(11, 8)) # Cria uma nova figura para o gráfico.
     ax = fig.add_subplot(111, projection='3d') # Adiciona um subplot 3D à figura.
     plt.subplots_adjust(right=0.7) # Ajusta o layout para deixar espaço para a legenda à direita.
@@ -225,9 +227,17 @@ def algoritmo_genetico(tamanho_populacao, limites, num_geracoes, taxa_cruzamento
         aptidoes = avaliar_populacao(populacao, funcao_w4_wrapper_ag) 
 
         if not aptidoes or np.isinf(min(aptidoes)): # Lida com casos onde não há aptidões válidas (evita erros).
+            # Se não houver aptidões válidas, adiciona o último valor conhecido ou infinito ao histórico
+            if historico_melhor_global_por_geracao:
+                historico_melhor_global_por_geracao.append(historico_melhor_global_por_geracao[-1])
+            else:
+                historico_melhor_global_por_geracao.append(float('inf'))
             continue # Pula para a próxima iteração.
 
         melhor_aptidao_geracao = min(aptidoes) # Encontra a melhor aptidão da geração atual.
+        historico_melhor_global_por_geracao.append(melhor_aptidao_geracao) # Armazena para o gráfico de convergência
+        # historico_media_aptidoes_geracao.append(np.mean(aptidoes)) # Se você quiser a média
+
         idx_melhor_geracao = aptidoes.index(melhor_aptidao_geracao) # Encontra o índice do melhor indivíduo da geração.
         melhor_solucao_geracao_atual = populacao[idx_melhor_geracao] # Pega o melhor indivíduo da geração.
 
@@ -317,7 +327,7 @@ def algoritmo_genetico(tamanho_populacao, limites, num_geracoes, taxa_cruzamento
     stats_output.append("--- Resultados Finais do Algoritmo Genético ---")
     stats_output.append(f"Melhor solução encontrada (AG): {melhor_solucao}") # Posição da melhor solução.
     stats_output.append(f"Valor da função para a melhor solução (AG): {melhor_aptidao:.4f}") # Valor da função para a melhor solução.
-    stats_output.append(f"Gerações executadas (AG): {i}") # Número total de gerações executadas.
+    stats_output.append(f"Gerações executadas (AG): {i + 1}") # Número total de gerações executadas (i é 0-indexado)
     stats_output.append(f"Avaliações da função objetivo (AG): {funcao_w4_wrapper_ag.evaluations}") # Avaliações totais (convergência).
     stats_output.append(f"Operações de Multiplicação (AG): {global_op_counter.multiplications}") # Multiplicações totais (convergência).
     stats_output.append(f"Operações de Divisão (AG): {global_op_counter.divisions}") # Divisões totais (convergência).
@@ -331,7 +341,7 @@ def algoritmo_genetico(tamanho_populacao, limites, num_geracoes, taxa_cruzamento
 
     # Salva as estatísticas em um arquivo .txt.
     output_folder_text = "resultados_ag" # Define o nome da pasta.
-    os.makedirs(output_folder_text, exist_ok=True) # Cria a pasta se não existir.
+    os.makedirs(output_folder_text, exist_ok=True) # Cria a pasta se não existir
 
     # Reutiliza o mesmo timestamp usado para o gráfico para manter consistência nos nomes dos arquivos.
     file_name = f"estatisticas_ag_{timestamp}.txt" # Define o nome do arquivo.
@@ -343,7 +353,31 @@ def algoritmo_genetico(tamanho_populacao, limites, num_geracoes, taxa_cruzamento
 
     print(f"\nEstatísticas salvas em: {output_path}") # Informa onde o arquivo foi salvo.
 
-    return melhor_solucao, melhor_aptidao, i # Retorna os principais resultados do algoritmo.
+        # NOVO: Listas para armazenar o histórico de convergência ---
+    historico_melhor_global_por_geracao = [] # <--- ESTA LINHA É IMPORTANTE
+    # ... (código anterior) ...
+
+    for i in range(num_geracoes):
+        # ... (código de avaliação da população) ...
+        melhor_aptidao_geracao = min(aptidoes) # Encontra a melhor aptidão da geração atual.
+        historico_melhor_global_por_geracao.append(melhor_aptidao_geracao) # <--- ESTA LINHA É IMPORTANTE
+        # ... (resto do código) ...
+
+    # ... (código de salvamento de gráficos e logs) ...
+
+    # --- NOVO: Retorna um dicionário com todos os resultados para analise_ag.py ---
+    return {
+        "melhor_solucao": melhor_solucao,
+        "melhor_valor_global": melhor_aptidao,
+        "iteracoes_executadas": i + 1,
+        "avaliacoes_funcao_total": funcao_w4_wrapper_ag.evaluations,
+        "multiplicacoes_total": global_op_counter.multiplications,
+        "divisoes_total": global_op_counter.divisions,
+        "avaliacoes_minimo_global": avaliacoes_ag_melhor_solucao,
+        "multiplicacoes_minimo_global": operacoes_ag_melhor_solucao_mult,
+        "divisoes_minimo_global": operacoes_ag_melhor_solucao_div,
+        "historico_melhor_global": historico_melhor_global_por_geracao, # <--- ESTA LINHA É CRÍTICA
+    }
 
 # Este bloco só será executado se genetico.py for o script principal rodado (ex: python genetico.py).
 if __name__ == "__main__":
@@ -358,7 +392,7 @@ if __name__ == "__main__":
     tolerancia = 1e-6
 
     # Chama a função do algoritmo genético com os parâmetros de teste.
-    melhor_solucao, melhor_aptidao, geracao = algoritmo_genetico(
+    results = algoritmo_genetico( # Altere aqui para 'results ='
         tamanho_populacao=tamanho_populacao,
         limites=limites,
         num_geracoes=num_geracoes,
@@ -367,3 +401,14 @@ if __name__ == "__main__":
         geracoes_sem_melhora_limite=geracoes_sem_melhora_limite,
         tolerancia=tolerancia
     )
+    # Impressão dos resultados do teste direto (usando o dicionário retornado)
+    print("\n--- Resultados Finais do Teste Direto do AG ---")
+    print(f"Melhor solução encontrada: {results['melhor_solucao']}")
+    print(f"Melhor valor global: {results['melhor_valor_global']:.4f}")
+    print(f"Gerações executadas: {results['iteracoes_executadas']}")
+    print(f"Avaliações da função (total): {results['avaliacoes_funcao_total']}")
+    print(f"Multiplicações (total): {results['multiplicacoes_total']}")
+    print(f"Divisões (total): {results['divisoes_total']}")
+    print(f"Avaliações (no melhor global): {results['avaliacoes_minimo_global']}")
+    print(f"Multiplicações (no melhor global): {results['multiplicacoes_minimo_global']}")
+    print(f"Divisões (no melhor global): {results['divisoes_minimo_global']}")

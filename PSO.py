@@ -11,14 +11,14 @@ from datetime import datetime # Para trabalhar com datas e horas (gerar timestam
 # Importa as funções personalizadas do projeto
 # Certifique-se de que 'funcoes_otimizacao.py' e 'utils.py' estão no mesmo diretório
 from funcoes_otimizacao import funcao_w4 # A função objetivo W4 a ser minimizada
-from Grafico import GraficoPSO # Importa a função para plotar o gráfico do PSO
+from Grafico import GraficoPSO # Importa a função para plotar o gráfico do PSO (visualização 3D)
 from utils import global_op_counter, FuncaoObjetivoWrapper # Contadores globais e o wrapper para a função objetivo
 
 # --- Definição da Classe Particula ---
 class Particula:
     """
     Representa uma única partícula no algoritmo de Otimização por Enxame de Partículas (PSO).
-    Cada partícula possui uma posição, velocidade e a melhor posição já encontrada por ela.
+    Each partícula possui uma posição, velocidade e a melhor posição já encontrada por ela.
     """
     def __init__(self, limites):
         """
@@ -27,7 +27,7 @@ class Particula:
         """
         # A posição da partícula é um array NumPy de 2 dimensões (x, y) gerado aleatoriamente.
         self.posicao_i = np.array([random.uniform(limites[0], limites[1]),
-                                   random.uniform(limites[0], limites[1])])
+                                     random.uniform(limites[0], limites[1])])
         
         # A velocidade da partícula é um array NumPy de 2 dimensões (vx, vy) gerado aleatoriamente.
         # A velocidade inicial é geralmente menor que a faixa dos limites de posição.
@@ -87,6 +87,12 @@ class PSO:
         # Cria um "wrapper" para a função objetivo que também conta suas avaliações
         self.funcao_w4_wrapper = FuncaoObjetivoWrapper(self.funcao_objetivo, global_op_counter)
 
+        # --- NOVAS VARIÁVEIS PARA ARMAZENAR DADOS DE CONVERGÊNCIA ---
+        self.historico_melhor_global = [] # Armazena o melhor valor global a cada iteração
+        self.historico_media_melhores_locais = [] # Armazena a média dos melhores valores locais das partículas a cada iteração
+        self.historico_desvio_padrao_melhores_locais = [] # Armazena o desvio padrão dos melhores valores locais das partículas a cada iteração
+
+
     def inicializar_enxame(self):
         """
         Cria e inicializa todas as partículas no enxame.
@@ -109,11 +115,12 @@ class PSO:
         iteracoes_sem_melhora = 0 # Contador para iterações consecutivas sem melhora significativa
         ultima_melhor_valor_global = float('inf') # Armazena o último melhor valor global para o critério de convergência
         
-        # --- INICIALIZAÇÃO DO GRÁFICO PARA PSO ---
-        # Certifique-se de que GraficoPSO está importado corretamente
+        # --- INICIALIZAÇÃO DO GRÁFICO PARA PSO (Visualização 3D em tempo real) ---
+        # Abertura da figura e do eixo 3D apenas se for realmente para plotar em tempo real.
+        # Se você não quer a visualização 3D em tempo real, pode comentar ou remover estas linhas.
         fig = plt.figure(figsize=(11, 8)) # Cria uma nova figura para o gráfico
         ax = fig.add_subplot(111, projection='3d') # Adiciona um subplot 3D à figura
-        plt.subplots_adjust(right=0.7) # Ajusta o layout para deixar espaço para a legenda à direita
+        plt.subplots_adjust(right=0.7) # Ajuste de layout
 
         i = 0 # Contador de iterações
         while i < self.num_iteracoes: # Loop principal do algoritmo PSO, uma iteração por vez
@@ -122,6 +129,9 @@ class PSO:
             self.w = self.w_max - (self.w_max - self.w_min) * i / self.num_iteracoes
             global_op_counter.add_mult(1) # Contabiliza a multiplicação na fórmula do 'w'
             global_op_counter.add_div(1) # Contabiliza a divisão na fórmula do 'w'
+
+            # --- Coleta dos melhores valores locais para calcular média e desvio padrão da geração ---
+            melhores_valores_locais_geracao = []
 
             for particula in enxame: # Itera sobre cada partícula no enxame
                 # Avalia a função objetivo na posição atual da partícula
@@ -141,7 +151,15 @@ class PSO:
                     self.avaliacoes_pso_minimo_global = self.funcao_w4_wrapper.evaluations
                     self.operacoes_pso_minimo_global_mult = global_op_counter.multiplications
                     self.operacoes_pso_minimo_global_div = global_op_counter.divisions
-            
+                
+                melhores_valores_locais_geracao.append(particula.melhor_valor_i) # Coleta o melhor valor local da partícula
+
+            # --- Armazenamento dos dados de convergência para o histórico ---
+            self.historico_melhor_global.append(self.melhor_valor_global)
+            self.historico_media_melhores_locais.append(np.mean(melhores_valores_locais_geracao))
+            self.historico_desvio_padrao_melhores_locais.append(np.std(melhores_valores_locais_geracao))
+
+
             # --- Lógica de parada por convergência (se a melhora global for menor que a tolerância) ---
             if i > 0 and abs(self.melhor_valor_global - ultima_melhor_valor_global) < self.tolerancia:
                 iteracoes_sem_melhora += 1 # Incrementa o contador de iterações sem melhora
@@ -187,30 +205,30 @@ class PSO:
                 # Garante que a partícula permaneça dentro dos limites do espaço de busca
                 particula.posicao_i = np.clip(particula.posicao_i, self.limites[0], self.limites[1])
             
-            # --- Dicionário com parâmetros e estatísticas para passar ao gráfico ---
-            # Este dicionário é atualizado a cada iteração com os valores correntes
+            # --- Dicionário com parâmetros e estatísticas para passar ao gráfico 3D (se ativo) ---
             pso_params_for_plot = {
                 "c1": self.c1,
                 "c2": self.c2,
                 "w_max": self.w_max,
                 "w_min": self.w_min,
-                "iteracoes_totais": self.num_iteracoes,
+                "num_iteracoes_max": self.num_iteracoes,
                 "num_particulas": self.num_particulas,
-                "avaliacoes_funcao": self.funcao_w4_wrapper.evaluations, # Avaliações totais da função objetivo até o momento
-                "multiplicacoes_total": global_op_counter.multiplications, # Multiplicações totais até o momento
-                "divisoes_total": global_op_counter.divisions, # Divisões totais até o momento
-                "avaliacoes_minimo_global": self.avaliacoes_pso_minimo_global, # Avaliações da função quando o melhor global foi encontrado
-                "multiplicacoes_minimo_global": self.operacoes_pso_minimo_global_mult, # Multiplicações quando o melhor global foi encontrado
-                "divisoes_minimo_global": self.operacoes_pso_minimo_global_div, # Divisões quando o melhor global foi encontrado
-                "iteracoes_sem_melhora": iteracoes_sem_melhora, # Contador de iterações consecutivas sem melhora
-                "limite_iteracoes_sem_melhora": self.iteracoes_sem_melhora_limite # NOVO: O limite definido para iterações sem melhora
+                "avaliacoes_funcao": self.funcao_w4_wrapper.evaluations,
+                "multiplicacoes_total": global_op_counter.multiplications,
+                "divisoes_total": global_op_counter.divisions,
+                "avaliacoes_minimo_global": self.avaliacoes_pso_minimo_global,
+                "multiplicacoes_minimo_global": self.operacoes_pso_minimo_global_mult,
+                "divisoes_minimo_global": self.operacoes_pso_minimo_global_div,
+                "iteracoes_sem_melhora": iteracoes_sem_melhora,
+                "limite_iteracoes_sem_melhora": self.iteracoes_sem_melhora_limite,
+                "melhor_posicao_global": self.melhor_posicao_global
             }
 
-            # Chama a função para desenhar o gráfico da iteração atual
-            GraficoPSO(enxame, i+1, ax, self.melhor_valor_global, pso_params=pso_params_for_plot)
+            # Chama a função para desenhar o gráfico 3D da iteração atual
+            GraficoPSO(enxame, i+1, ax, self.melhor_valor_global, pso_params=pso_params_for_plot) 
             i += 1 # Incrementa o contador de iterações.
 
-        # --- Salva a imagem do gráfico final ---
+        # --- Salva a imagem do gráfico 3D final ---
         output_folder_images = "resultados_pso_graficos" # Define a pasta para salvar as imagens
         os.makedirs(output_folder_images, exist_ok=True) # Cria a pasta se ela não existir
 
@@ -220,40 +238,41 @@ class PSO:
         image_path = os.path.join(output_folder_images, image_name)
 
         plt.savefig(image_path, dpi=300, bbox_inches='tight') # Salva a figura atual com alta resolução
-        print(f"Gráfico final do PSO salvo em: {image_path}")
+        print(f"Gráfico final do PSO (3D) salvo em: {image_path}")
         
         plt.close(fig) # Fecha a janela do gráfico para liberar recursos
 
         # --- Prepara as estatísticas para impressão e salvamento ---
         stats_output = [] # Lista para armazenar as linhas de saída
         stats_output.append("--- Resultados Finais do Algoritmo PSO ---")
-        stats_output.append(f"Função Otimizada: W4 (Minimização)") # Adiciona a função otimizada
+        stats_output.append(f"Função Otimizada: W4 (Minimização)")
         stats_output.append(f"Parâmetros do Algoritmo:")
-        stats_output.append(f"  Limites da Função: {self.limites}")
-        stats_output.append(f"  Número de Partículas: {self.num_particulas}")
-        stats_output.append(f"  Número de Iterações Máximo: {self.num_iteracoes}")
-        stats_output.append(f"  Peso de Inércia (W_max): {self.w_max}")
-        stats_output.append(f"  Peso de Inércia (W_min): {self.w_min}")
-        stats_output.append(f"  Coeficiente Cognitivo (c1): {self.c1}")
-        stats_output.append(f"  Coeficiente Social (c2): {self.c2}")
-        stats_output.append(f"  Tolerância para Convergência: {self.tolerancia}")
-        stats_output.append(f"  Iterações sem Melhora Limite: {self.iteracoes_sem_melhora_limite}")
+        stats_output.append(f"   Limites da Função: {self.limites}")
+        stats_output.append(f"   Número de Partículas: {self.num_particulas}")
+        stats_output.append(f"   Número de Iterações Máximo: {self.num_iteracoes}")
+        stats_output.append(f"   Peso de Inércia (W_max): {self.w_max}")
+        stats_output.append(f"   Peso de Inércia (W_min): {self.w_min}")
+        stats_output.append(f"   Coeficiente Cognitivo (c1): {self.c1}")
+        stats_output.append(f"   Coeficiente Social (c2): {self.c2}")
+        stats_output.append(f"   Tolerância para Convergência: {self.tolerancia}")
+        stats_output.append(f"   Iterações sem Melhora Limite: {self.iteracoes_sem_melhora_limite}")
         stats_output.append("--------------------------------------------")
-        stats_output.append(f"Melhor solução encontrada (PSO): {self.melhor_posicao_global}") # Posição do mínimo
-        stats_output.append(f"Valor da função para a melhor solução (PSO): {self.melhor_valor_global:.4f}") # Valor do mínimo
-        stats_output.append(f"Iterações executadas (PSO): {i}") # Número total de iterações executadas
-        stats_output.append(f"Avaliações da função objetivo (Total): {self.funcao_w4_wrapper.evaluations}") # Avaliações totais até a convergência
-        stats_output.append(f"Operações de Multiplicação (Total): {global_op_counter.multiplications}") # Multiplicações totais
-        stats_output.append(f"Operações de Divisão (Total): {global_op_counter.divisions}") # Divisões totais
-        stats_output.append(f"Avaliações para o 'melhor global' (momento de encontro): {self.avaliacoes_pso_minimo_global}") # Avaliações no momento do melhor global
-        stats_output.append(f"Multiplicações para o 'melhor global' (momento de encontro): {self.operacoes_pso_minimo_global_mult}") # Multiplicações no momento do melhor global
-        stats_output.append(f"Divisões para o 'melhor global' (momento de encontro): {self.operacoes_pso_minimo_global_div}") # Divisões no momento do melhor global
+        stats_output.append(f"Melhor solução encontrada (PSO): {self.melhor_posicao_global}")
+        stats_output.append(f"Valor da função para a melhor solução (PSO): {self.melhor_valor_global:.4f}")
+        stats_output.append(f"Iterações executadas (PSO): {i}")
+        stats_output.append(f"Avaliações da função objetivo (Total): {self.funcao_w4_wrapper.evaluations}")
+        stats_output.append(f"Operações de Multiplicação (Total): {global_op_counter.multiplications}")
+        stats_output.append(f"Operações de Divisão (Total): {global_op_counter.divisions}")
+        stats_output.append(f"Avaliações para o 'melhor global' (momento de encontro): {self.avaliacoes_pso_minimo_global}")
+        stats_output.append(f"Multiplicações para o 'melhor global' (momento de encontro): {self.operacoes_pso_minimo_global_mult}")
+        stats_output.append(f"Divisões para o 'melhor global' (momento de encontro): {self.operacoes_pso_minimo_global_div}")
         stats_output.append("--------------------------------------------")
 
-        for line in stats_output: # Imprime as linhas de resultado no console
+        for line in stats_output:
             print(line)
 
-        # Retorna um dicionário com todas as estatísticas numéricas para análise externa
+        # Retorna um dicionário com todas as estatísticas numéricas para análise externa,
+        # incluindo os históricos de convergência
         results = {
             "melhor_posicao_global": self.melhor_posicao_global,
             "melhor_valor_global": self.melhor_valor_global,
@@ -264,7 +283,6 @@ class PSO:
             "avaliacoes_minimo_global": self.avaliacoes_pso_minimo_global,
             "multiplicacoes_minimo_global": self.operacoes_pso_minimo_global_mult,
             "divisoes_minimo_global": self.operacoes_pso_minimo_global_div,
-            # Inclui os parâmetros de entrada para referência na análise
             "limites_funcao": self.limites,
             "num_particulas": self.num_particulas,
             "num_iteracoes_max": self.num_iteracoes,
@@ -273,7 +291,10 @@ class PSO:
             "c1": self.c1,
             "c2": self.c2,
             "tolerancia": self.tolerancia,
-            "iteracoes_sem_melhora_limite": self.iteracoes_sem_melhora_limite
+            "iteracoes_sem_melhora_limite": self.iteracoes_sem_melhora_limite,
+            "historico_melhor_global": self.historico_melhor_global, # NOVO
+            "historico_media_melhores_locais": self.historico_media_melhores_locais, # NOVO
+            "historico_desvio_padrao_melhores_locais": self.historico_desvio_padrao_melhores_locais # NOVO
         }
         return results
 
