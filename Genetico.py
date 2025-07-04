@@ -1,3 +1,5 @@
+# Genetico.py
+
 # Importa as bibliotecas necessárias para o Algoritmo Genético
 import numpy as np # NumPy para operações numéricas e manipulação de arrays
 import random # Para geração de números aleatórios
@@ -9,7 +11,9 @@ from datetime import datetime # Para trabalhar com datas e horas (gerar timestam
 # Importa as funções personalizadas do projeto
 from funcoes_otimizacao import funcao_w4 # A função objetivo W4 a ser minimizada
 # A função GraficoAG será importada do Grafico.py
-from Grafico import GraficoAG # Importa a função para plotar o gráfico do AG
+# Removendo GraficoAG pois a visualização 3D por geração será desnecessária ao rodar 20 vezes
+# e a visualização de convergência será feita por analise_ag.py
+# from Grafico import GraficoAG 
 from utils import global_op_counter, FuncaoObjetivoWrapper # Contadores globais e o wrapper para a função objetivo
 
 # --- Funções Auxiliares do Algoritmo Genético ---
@@ -81,8 +85,6 @@ def selecao_roleta(populacao, aptidoes):
 
     probabilidades = [score / total_fit for score in fit_scores] # Calcula a probabilidade de seleção de cada indivíduo.
 
-    # NOVO: Não precisamos construir a lista 'roleta' explicitamente,
-    # podemos usar um acumulador e comparar o número aleatório.
     r = random.random() # Gera um número aleatório entre 0 e 1 (o "giro" da roleta).
     acumulado = 0
     for i, prob in enumerate(probabilidades): # Itera sobre as probabilidades.
@@ -174,7 +176,8 @@ def algoritmo_genetico(tamanho_populacao, limites, num_geracoes, taxa_cruzamento
         tolerancia (float): Tolerância para o critério de parada por convergência.
         
     Retorna:
-        dict: Um dicionário contendo os resultados e estatísticas do algoritmo.
+        dict: Um dicionário contendo os resultados e estatísticas do algoritmo,
+              incluindo os históricos de convergência.
     """
     global_op_counter.reset() # Reseta os contadores globais de operações no início do AG.
     # Cria um "wrapper" para a função objetivo que também conta suas avaliações.
@@ -194,17 +197,19 @@ def algoritmo_genetico(tamanho_populacao, limites, num_geracoes, taxa_cruzamento
     # Armazena a última melhor aptidão global para o critério de convergência.
     ultima_melhor_aptidao_global = float('inf') 
 
-    # --- NOVO: Listas para armazenar o histórico de convergência ---
-    historico_melhor_global_por_geracao = []
+    # --- LISTAS PARA ARMAZENAR O HISTÓRICO DE CONVERGÊNCIA ---
+    historico_melhor_geracao = [] # Armazena o melhor valor de aptidão EM CADA GERAÇÃO
+    historico_melhor_global = []  # Armazena o MELHOR valor de aptidão encontrado ATÉ O MOMENTO
     # historico_media_aptidoes_geracao = [] # Você pode adicionar esta se quiser a média também
 
-    # --- INICIALIZAÇÃO DO GRÁFICO PARA AG (Mantido para testar o AG individualmente) ---
-    fig = plt.figure(figsize=(11, 8)) # Cria uma nova figura para o gráfico.
-    ax = fig.add_subplot(111, projection='3d') # Adiciona um subplot 3D à figura.
-    plt.subplots_adjust(right=0.7) # Ajusta o layout para deixar espaço para a legenda à direita.
+    # O código de plotagem 3D por geração será desativado aqui para focar na média de runs
+    # e evitar que várias janelas de gráfico sejam abertas durante a execução de `analise_ag.py`.
+    # fig = plt.figure(figsize=(11, 8)) # Cria uma nova figura para o gráfico.
+    # ax = fig.add_subplot(111, projection='3d') # Adiciona um subplot 3D à figura.
+    # plt.subplots_adjust(right=0.7) # Ajusta o layout para deixar espaço para a legenda à direita.
 
     # Dicionário para armazenar os parâmetros e estatísticas do AG para a legenda do gráfico.
-    # Será atualizado a cada iteração e passado para a função GraficoAG.
+    # (Este dicionário será útil se você quiser debuggar uma única run novamente)
     ag_params_for_plot = {
         "tamanho_populacao": tamanho_populacao,
         "taxa_mutacao": taxa_mutacao,
@@ -218,7 +223,7 @@ def algoritmo_genetico(tamanho_populacao, limites, num_geracoes, taxa_cruzamento
         "multiplicacoes_minimo_global": 0, # Será atualizado quando o melhor global for encontrado.
         "divisoes_minimo_global": 0, # Será atualizado quando o melhor global for encontrado.
         "geracoes_sem_melhora": geracoes_sem_melhora, # Contador de gerações consecutivas sem melhora
-        "limite_geracoes_sem_melhora": geracoes_sem_melhora_limite # NOVO: O limite definido para gerações sem melhora
+        "limite_geracoes_sem_melhora": geracoes_sem_melhora_limite # O limite definido para gerações sem melhora
     }
 
     # Loop principal do algoritmo genético, uma iteração por geração.
@@ -228,47 +233,43 @@ def algoritmo_genetico(tamanho_populacao, limites, num_geracoes, taxa_cruzamento
 
         if not aptidoes or np.isinf(min(aptidoes)): # Lida com casos onde não há aptidões válidas (evita erros).
             # Se não houver aptidões válidas, adiciona o último valor conhecido ou infinito ao histórico
-            if historico_melhor_global_por_geracao:
-                historico_melhor_global_por_geracao.append(historico_melhor_global_por_geracao[-1])
+            if historico_melhor_global:
+                historico_melhor_geracao.append(historico_melhor_global[-1]) # Melhor da geração = último melhor global
+                historico_melhor_global.append(historico_melhor_global[-1])
             else:
-                historico_melhor_global_por_geracao.append(float('inf'))
+                historico_melhor_geracao.append(float('inf'))
+                historico_melhor_global.append(float('inf'))
             continue # Pula para a próxima iteração.
 
         melhor_aptidao_geracao = min(aptidoes) # Encontra a melhor aptidão da geração atual.
-        historico_melhor_global_por_geracao.append(melhor_aptidao_geracao) # Armazena para o gráfico de convergência
-        # historico_media_aptidoes_geracao.append(np.mean(aptidoes)) # Se você quiser a média
+        historico_melhor_geracao.append(melhor_aptidao_geracao) # Armazena o melhor da GERAÇÃO ATUAL
 
-        idx_melhor_geracao = aptidoes.index(melhor_aptidao_geracao) # Encontra o índice do melhor indivíduo da geração.
-        melhor_solucao_geracao_atual = populacao[idx_melhor_geracao] # Pega o melhor indivíduo da geração.
-
-        # Verifica se o melhor indivíduo da geração atual é melhor que o melhor global encontrado até agora.
+        # Atualiza o melhor GLOBAL encontrado até o momento
         if melhor_aptidao_geracao < melhor_aptidao:
-            melhor_aptidao = melhor_aptidao_geracao # Atualiza a melhor aptidão global.
-            melhor_solucao = melhor_solucao_geracao_atual.copy() # Atualiza a melhor solução global.
-            melhor_geracao = i # Registra a geração em que foi encontrada.
-            
-            # Registra as avaliações e operações *no momento* em que o melhor global foi encontrado.
-            avaliacoes_ag_melhor_solucao = funcao_w4_wrapper_ag.evaluations
-            operacoes_ag_melhor_solucao_mult = global_op_counter.multiplications
-            operacoes_ag_melhor_solucao_div = global_op_counter.divisions
-            
-            # Atualiza as estatísticas no dicionário para a legenda do gráfico.
-            ag_params_for_plot["avaliacoes_minimo_global"] = avaliacoes_ag_melhor_solucao
-            ag_params_for_plot["multiplicacoes_minimo_global"] = operacoes_ag_melhor_solucao_mult
-            ag_params_for_plot["divisoes_minimo_global"] = operacoes_ag_melhor_solucao_div
-        
-        # --- Lógica de parada por convergência ---
-        # Se a melhora global for menor que a tolerância por um certo número de gerações.
-        if i > 0 and abs(melhor_aptidao - ultima_melhor_aptidao_global) < tolerancia:
-            geracoes_sem_melhora += 1 # Incrementa o contador de gerações sem melhora.
+            # Verifica se a melhora é significativa acima da tolerância
+            if abs(melhor_aptidao - melhor_aptidao_geracao) > tolerancia:
+                melhor_aptidao = melhor_aptidao_geracao # Atualiza a melhor aptidão global.
+                melhor_solucao = populacao[aptidoes.index(melhor_aptidao_geracao)].copy() # Atualiza a melhor solução global.
+                melhor_geracao = i # Registra a geração em que foi encontrada.
+                
+                # Registra as avaliações e operações *no momento* em que o melhor global foi encontrado.
+                avaliacoes_ag_melhor_solucao = funcao_w4_wrapper_ag.evaluations
+                operacoes_ag_melhor_solucao_mult = global_op_counter.multiplications
+                operacoes_ag_melhor_solucao_div = global_op_counter.divisions
+                
+                geracoes_sem_melhora = 0 # Reseta o contador de gerações sem melhora
+            else:
+                # Melhorou, mas dentro da tolerância, então consideramos como não melhora significativa
+                geracoes_sem_melhora += 1
         else:
-            geracoes_sem_melhora = 0 # Reseta o contador se houve melhora.
+            geracoes_sem_melhora += 1 # Não houve melhora ou a melhora foi insignificante
             
-        ultima_melhor_aptidao_global = melhor_aptidao # Atualiza a última melhor aptidão global para a próxima comparação.
+        historico_melhor_global.append(melhor_aptidao) # Adiciona o MELHOR GLOBAL ATUAL ao histórico
 
+        # --- Lógica de parada por convergência ---
         # Verifica se o limite de gerações sem melhora foi atingido.
         if geracoes_sem_melhora >= geracoes_sem_melhora_limite: 
-            print(f"\n[AG] Parada por convergência: Mudança no melhor valor da aptidão menor que {tolerancia} por {geracoes_sem_melhora_limite} gerações.")
+            print(f"\n[AG] Parada por convergência: Mudança no melhor valor da aptidão menor que {tolerancia} por {geracoes_sem_melhora_limite} gerações. (Geração: {i + 1})")
             break # Sai do loop principal do AG.
             
         # --- Construção da próxima geração sem elitismo ---
@@ -303,80 +304,29 @@ def algoritmo_genetico(tamanho_populacao, limites, num_geracoes, taxa_cruzamento
         ag_params_for_plot["avaliacoes_funcao"] = funcao_w4_wrapper_ag.evaluations
         ag_params_for_plot["multiplicacoes_total"] = global_op_counter.multiplications
         ag_params_for_plot["divisoes_total"] = global_op_counter.divisions
-        # Atualiza o contador de gerações sem melhora no dicionário para ser exibido no gráfico.
         ag_params_for_plot["geracoes_sem_melhora"] = geracoes_sem_melhora 
-        # Passa o dicionário de parâmetros para a função GraficoAG para plotar a geração atual.
-        GraficoAG(populacao, melhor_solucao, i + 1, ax, melhor_aptidao, ag_params=ag_params_for_plot)
+        
+        # O GraficoAG não será chamado a cada iteração, será chamado apenas pelo analise_ag.py
+        # para plotar a média de várias runs.
+        # GraficoAG(populacao, melhor_solucao, i + 1, ax, melhor_aptidao, ag_params=ag_params_for_plot)
 
-    # --- Salva a imagem do gráfico final ---
-    output_folder_images = "resultados_ag_graficos" # Define a pasta para salvar as imagens
-    os.makedirs(output_folder_images, exist_ok=True) # Cria a pasta se não existir
-
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S") # Gera um timestamp para o nome do arquivo
-    # Nome do arquivo inclui o timestamp e o melhor valor global para fácil identificação
-    image_name = f"AG_final_plot_{timestamp}_Valor_{melhor_aptidao:.4f}.png"
-    image_path = os.path.join(output_folder_images, image_name)
-
-    plt.savefig(image_path, dpi=300, bbox_inches='tight') # Salva a figura atual com alta resolução
-    print(f"Gráfico final do AG salvo em: {image_path}")
-
-    plt.close(fig) # Fecha a janela do gráfico para liberar recursos
-
-    # --- Prepara as estatísticas para impressão e salvamento ---
-    stats_output = [] # Lista para armazenar as linhas de saída.
-    stats_output.append("--- Resultados Finais do Algoritmo Genético ---")
-    stats_output.append(f"Melhor solução encontrada (AG): {melhor_solucao}") # Posição da melhor solução.
-    stats_output.append(f"Valor da função para a melhor solução (AG): {melhor_aptidao:.4f}") # Valor da função para a melhor solução.
-    stats_output.append(f"Gerações executadas (AG): {i + 1}") # Número total de gerações executadas (i é 0-indexado)
-    stats_output.append(f"Avaliações da função objetivo (AG): {funcao_w4_wrapper_ag.evaluations}") # Avaliações totais (convergência).
-    stats_output.append(f"Operações de Multiplicação (AG): {global_op_counter.multiplications}") # Multiplicações totais (convergência).
-    stats_output.append(f"Operações de Divisão (AG): {global_op_counter.divisions}") # Divisões totais (convergência).
-    stats_output.append(f"Avaliações para o 'melhor global' (AG): {avaliacoes_ag_melhor_solucao}") # Avaliações no momento do melhor global.
-    stats_output.append(f"Multiplicações para o 'melhor global' (AG): {operacoes_ag_melhor_solucao_mult}") # Multiplicações no momento do melhor global.
-    stats_output.append(f"Divisões para o 'melhor global' (AG): {operacoes_ag_melhor_solucao_div}") # Divisões no momento do melhor global.
-    stats_output.append("--------------------------------------------")
-
-    for line in stats_output: # Imprime as linhas de resultado no console.
-        print(line)
-
-    # Salva as estatísticas em um arquivo .txt.
-    output_folder_text = "resultados_ag" # Define o nome da pasta.
-    os.makedirs(output_folder_text, exist_ok=True) # Cria a pasta se não existir
-
-    # Reutiliza o mesmo timestamp usado para o gráfico para manter consistência nos nomes dos arquivos.
-    file_name = f"estatisticas_ag_{timestamp}.txt" # Define o nome do arquivo.
-    output_path = os.path.join(output_folder_text, file_name) # Cria o caminho completo do arquivo.
-
-    with open(output_path, "w") as f: # Abre o arquivo para escrita.
-        for line in stats_output:
-            f.write(line + "\n") # Escreve cada linha no arquivo.
-
-    print(f"\nEstatísticas salvas em: {output_path}") # Informa onde o arquivo foi salvo.
-
-        # NOVO: Listas para armazenar o histórico de convergência ---
-    historico_melhor_global_por_geracao = [] # <--- ESTA LINHA É IMPORTANTE
-    # ... (código anterior) ...
-
-    for i in range(num_geracoes):
-        # ... (código de avaliação da população) ...
-        melhor_aptidao_geracao = min(aptidoes) # Encontra a melhor aptidão da geração atual.
-        historico_melhor_global_por_geracao.append(melhor_aptidao_geracao) # <--- ESTA LINHA É IMPORTANTE
-        # ... (resto do código) ...
-
-    # ... (código de salvamento de gráficos e logs) ...
-
-    # --- NOVO: Retorna um dicionário com todos os resultados para analise_ag.py ---
+    # O código de salvamento do gráfico 3D e dos logs individuais será movido para analise_ag.py
+    # ou pode ser mantido aqui se você quiser que cada run individual salve seu próprio gráfico e log.
+    # No contexto de "N runs", geralmente queremos apenas os resultados finais e o gráfico médio.
+    
+    # --- Prepara os resultados para retorno ---
     return {
         "melhor_solucao": melhor_solucao,
         "melhor_valor_global": melhor_aptidao,
-        "iteracoes_executadas": i + 1,
+        "iteracoes_executadas": i + 1, # 'i' é 0-indexed, então i+1 é o número de gerações
         "avaliacoes_funcao_total": funcao_w4_wrapper_ag.evaluations,
         "multiplicacoes_total": global_op_counter.multiplications,
         "divisoes_total": global_op_counter.divisions,
         "avaliacoes_minimo_global": avaliacoes_ag_melhor_solucao,
         "multiplicacoes_minimo_global": operacoes_ag_melhor_solucao_mult,
         "divisoes_minimo_global": operacoes_ag_melhor_solucao_div,
-        "historico_melhor_global": historico_melhor_global_por_geracao, # <--- ESTA LINHA É CRÍTICA
+        "historico_melhor_geracao": historico_melhor_geracao, # Retorna o histórico por geração
+        "historico_melhor_global": historico_melhor_global,  # Retorna o histórico global
     }
 
 # Este bloco só será executado se genetico.py for o script principal rodado (ex: python genetico.py).
@@ -392,7 +342,7 @@ if __name__ == "__main__":
     tolerancia = 1e-6
 
     # Chama a função do algoritmo genético com os parâmetros de teste.
-    results = algoritmo_genetico( # Altere aqui para 'results ='
+    results = algoritmo_genetico(
         tamanho_populacao=tamanho_populacao,
         limites=limites,
         num_geracoes=num_geracoes,
@@ -412,3 +362,16 @@ if __name__ == "__main__":
     print(f"Avaliações (no melhor global): {results['avaliacoes_minimo_global']}")
     print(f"Multiplicações (no melhor global): {results['multiplicacoes_minimo_global']}")
     print(f"Divisões (no melhor global): {results['divisoes_minimo_global']}")
+    print(f"Tamanho do histórico_melhor_geracao: {len(results['historico_melhor_geracao'])}")
+    print(f"Tamanho do historico_melhor_global: {len(results['historico_melhor_global'])}")
+
+    # Opcional: Plotar o histórico de convergência para uma única run de teste
+    plt.figure(figsize=(10, 6))
+    plt.plot(results['historico_melhor_geracao'], label='Melhor da Geração', linestyle='--', color='blue')
+    plt.plot(results['historico_melhor_global'], label='Melhor Global (acumulado)', color='red')
+    plt.title('Convergência do Algoritmo Genético (Única Run)')
+    plt.xlabel('Geração')
+    plt.ylabel('Valor da Função Objetivo')
+    plt.grid(True)
+    plt.legend()
+    plt.show()

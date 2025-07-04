@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 from datetime import datetime
-import pandas as pd # Para organizar os resultados em um DataFrame
+import pandas as pd
 
 # Importe a função principal do seu algoritmo genético.
 # Certifique-se de que 'genetico' é o nome correto do arquivo (sem .py)
@@ -31,25 +31,23 @@ class AnaliseAG:
         self.parametros_ag = parametros_ag
         self.num_simulacoes = num_simulacoes
         self.output_folder = output_folder
-        self.output_folder_summary = OUTPUT_FOLDER_SUMMARY # Usar a nova pasta para o sumário
+        self.output_folder_summary = OUTPUT_FOLDER_SUMMARY
         
-        # Garante que as pastas de saída existam
         os.makedirs(self.output_folder, exist_ok=True)
-        os.makedirs(self.output_folder_summary, exist_ok=True) # Cria a pasta para o sumário
+        os.makedirs(self.output_folder_summary, exist_ok=True)
 
     def executar(self):
         print(f"Iniciando análise do Algoritmo Genético com {self.num_simulacoes} simulações...\n")
 
-        # Listas para armazenar os resultados de cada simulação individualmente
         resultados_simulacoes = []
         
-        # DataFrame para armazenar o histórico de convergência de cada simulação
-        historicos_convergencia_df = pd.DataFrame()
+        # NOVAS LISTAS para armazenar os históricos de cada simulação
+        all_historico_melhor_geracao = []
+        all_historico_melhor_global = []
 
         for i in range(self.num_simulacoes):
             print(f"Executando simulação AG {i+1}/{self.num_simulacoes}...")
             
-            # Chama a função algoritmo_genetico e recebe o dicionário de resultados
             results_ag = algoritmo_genetico(
                 tamanho_populacao=self.parametros_ag["tamanho_populacao"],
                 limites=self.parametros_ag["limites"],
@@ -60,7 +58,6 @@ class AnaliseAG:
                 tolerancia=self.parametros_ag["tolerancia"]
             )
             
-            # Adiciona os resultados desta simulação à lista
             resultados_simulacoes.append({
                 "Simulacao": i + 1,
                 "Melhor Valor Encontrado": results_ag["melhor_valor_global"],
@@ -73,26 +70,21 @@ class AnaliseAG:
                 "Divisões (no Melhor Global)": results_ag["divisoes_minimo_global"],
             })
             
-            # Adiciona o histórico de convergência desta simulação ao DataFrame
-            # Isso garante que mesmo se as simulações tiverem comprimentos diferentes,
-            # o Pandas lidará com isso com NaNs, que serão preenchidos depois.
-            historicos_convergencia_df[f'Simulação {i+1}'] = pd.Series(results_ag["historico_melhor_global"])
+            # Coleta os dois históricos de cada simulação
+            all_historico_melhor_geracao.append(results_ag["historico_melhor_geracao"])
+            all_historico_melhor_global.append(results_ag["historico_melhor_global"])
 
 
-        # --- Geração de Estatísticas e Relatórios ---
-        # Converte a lista de resultados em um DataFrame para facilitar a análise estatística
+        # --- Geração de Estatísticas e Relatórios (sem alterações nesta parte) ---
         df_resultados_completos = pd.DataFrame(resultados_simulacoes)
-
-        # Cria um timestamp para os arquivos de saída
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         
-        # --- SALVAR RESULTADOS BRUTOS EM CSV E EXCEL (como antes) ---
         csv_filename_bruto = os.path.join(self.output_folder, f"resultados_ag_simulacoes_{timestamp}.csv")
         excel_filename_bruto = os.path.join(self.output_folder, f"resultados_ag_simulacoes_{timestamp}.xlsx")
         
         df_resultados_completos.to_csv(csv_filename_bruto, index=False)
         
-        try: # Bloco try-except para o Excel, caso openpyxl não esteja instalado
+        try:
             df_resultados_completos.to_excel(excel_filename_bruto, index=False)
             print(f"Resultados detalhados de cada simulação salvos em Excel: {excel_filename_bruto}")
         except ModuleNotFoundError:
@@ -102,21 +94,12 @@ class AnaliseAG:
         print(f"\nResultados detalhados de cada simulação salvos em CSV: {csv_filename_bruto}")
 
 
-        # --- NOVO: GERAR E SALVAR CSV COM SUMÁRIO ESTATÍSTICO (formato PSO) ---
-        # As colunas 'Simulacao' não devem ser incluídas nas estatísticas de média/desvio padrão
         colunas_metrica = [col for col in df_resultados_completos.columns if col != 'Simulacao']
-
-        # Calcular as estatísticas descritivas (média e desvio padrão)
         stats = df_resultados_completos[colunas_metrica].describe().loc[['mean', 'std']].transpose()
-
-        # Renomear as colunas para 'Media' e 'Desvio_Padrao' para combinar com o formato do PSO
         stats.rename(columns={'mean': 'Media', 'std': 'Desvio_Padrao'}, inplace=True)
-
-        # Resetar o índice para transformar os nomes das métricas em uma coluna 'Métrica'
         df_sumario_ag = stats.reset_index()
         df_sumario_ag.rename(columns={'index': 'Métrica'}, inplace=True)
 
-        # Definir uma ordem específica para as métricas, se desejar (opcional, para consistência visual)
         ordem_metrica = [
             "Melhor Valor Encontrado",
             "Gerações para Convergência",
@@ -127,9 +110,7 @@ class AnaliseAG:
             "Multiplicações (no Melhor Global)",
             "Divisões (no Melhor Global)"
         ]
-        # Garantir que todas as métricas existentes estejam na ordem, adicionando novas ao final se houver
         ordem_final = [m for m in ordem_metrica if m in df_sumario_ag['Métrica'].values]
-        # Adicionar métricas que podem não estar na lista pré-definida, mas estão no DataFrame
         for m in df_sumario_ag['Métrica'].values:
             if m not in ordem_final:
                 ordem_final.append(m)
@@ -138,60 +119,88 @@ class AnaliseAG:
         df_sumario_ag = df_sumario_ag.sort_values('Métrica')
         df_sumario_ag.reset_index(drop=True, inplace=True)
 
-
-        # Salvar o CSV sumarizado na nova pasta
         sumario_csv_filename = os.path.join(self.output_folder_summary, f"Sumario_Desempenho_AG_{timestamp}.csv")
         df_sumario_ag.to_csv(sumario_csv_filename, index=False)
         print(f"\nSumário de desempenho AG (Média e Desvio Padrão) salvo em: {sumario_csv_filename}")
         print("\n--- Sumário de Desempenho AG ---")
-        print(df_sumario_ag) # Imprime o sumário no console
+        print(df_sumario_ag)
 
-        # --- SALVAR RELATÓRIO DE ESTATÍSTICAS (TXT) ---
         report_filename = os.path.join(self.output_folder, f"relatorio_analise_ag_{timestamp}.txt")
         with open(report_filename, "w") as f:
             f.write(f"Análise do Algoritmo Genético ({self.num_simulacoes} simulações)\n")
             f.write("------------------------------------------------------------------\n")
             f.write("Parâmetros do AG:\n")
             for param, value in self.parametros_ag.items():
-                f.write(f"  {param.replace('_', ' ').capitalize()}: {value}\n")
+                f.write(f"  {param.replace('_', ' ').capitalize()}: {value}\n")
             f.write("------------------------------------------------------------------\n")
             f.write("Estatísticas Sumárias das Simulações (Formato 'describe'):\n")
-            # Usa o stats_sumario original do describe() para o TXT
             f.write(df_resultados_completos.describe().loc[['mean', 'std', 'min', 'max']].transpose().to_string())
             f.write("\n------------------------------------------------------------------\n")
             f.write("\nSumário de Desempenho (Média e Desvio Padrão):\n")
-            f.write(df_sumario_ag.to_string()) # Adiciona o novo sumário formatado ao TXT
+            f.write(df_sumario_ag.to_string())
             f.write("\n------------------------------------------------------------------\n")
             print(f"Relatório de análise salvo em: {report_filename}")
 
-        # --- Plotar o gráfico de convergência médio ---
-        plt.figure(figsize=(12, 7)) # Aumenta um pouco o tamanho para melhor visualização
-        
-        # Preenche NaNs com o último valor válido para que a média e desvio padrão sejam calculados corretamente
-        historicos_convergencia_filled = historicos_convergencia_df.fillna(method='ffill', axis=0) 
-        
-        # Calcula a média e o desvio padrão ao longo das simulações
-        media_historico = historicos_convergencia_filled.mean(axis=1)
-        std_historico = historicos_convergencia_filled.std(axis=1)
+        # --- NOVO: Lógica de Plotagem similar ao PSO ---
+        # Garantir que todos os históricos tenham o mesmo comprimento para calcular média/desvio
+        max_len = max(len(h) for h in all_historico_melhor_global) # Pode usar qualquer um dos históricos para o max_len
+        if not all_historico_melhor_global: # Adiciona esta verificação
+            print("Nenhum histórico de dados para plotar o gráfico de convergência AG.")
+            return
 
-        geracoes = np.arange(len(media_historico))
+        padded_historico_melhor_geracao = []
+        padded_historico_melhor_global = []
+
+        for i in range(self.num_simulacoes):
+            hg_geracao = all_historico_melhor_geracao[i]
+            hg_global = all_historico_melhor_global[i]
+
+            padded_historico_melhor_geracao.append(
+                hg_geracao + [hg_geracao[-1]] * (max_len - len(hg_geracao)) if hg_geracao else [np.nan] * max_len
+            )
+            padded_historico_melhor_global.append(
+                hg_global + [hg_global[-1]] * (max_len - len(hg_global)) if hg_global else [np.nan] * max_len
+            )
+
+        # Calcula a média e o desvio padrão ao longo das simulações
+        mean_historico_melhor_geracao = np.nanmean(padded_historico_melhor_geracao, axis=0)
+        std_historico_melhor_geracao = np.nanstd(padded_historico_melhor_geracao, axis=0)
         
-        plt.plot(geracoes, media_historico, label=f'Média da Aptidão do Melhor Indivíduo (AG)', color='blue')
-        plt.fill_between(geracoes, media_historico - std_historico, media_historico + std_historico, 
-                         alpha=0.2, color='lightblue', label='Desvio Padrão (AG)')
+        mean_historico_melhor_global = np.nanmean(padded_historico_melhor_global, axis=0) # Média do melhor global
+
+        geracoes = np.arange(1, max_len + 1)
         
-        plt.title('Convergência Média do Algoritmo Genético ao Longo das Simulações')
-        plt.xlabel('Gerações')
-        plt.ylabel('Melhor Aptidão (Valor da Função Objetivo)')
-        plt.grid(True)
-        plt.legend()
-        plt.yscale('log') # Escala logarítmica é útil para ver a convergência em funções com grande faixa de valores
-        plt.tight_layout() # Ajusta o layout para evitar corte de rótulos
+        # Estilo e plotagem idênticos ao PSO
+        plt.style.use('seaborn-v0_8-whitegrid')
+        fig, ax = plt.subplots(figsize=(12, 7))
+
+        # Linha azul tracejada (Média do Melhor Z da Geração)
+        ax.plot(geracoes, mean_historico_melhor_geracao, 'b--', label=f'Média do Melhor Z da Geração (AG)')
+        
+        # Área sombreada do desvio padrão
+        upper_bound_geracao = mean_historico_melhor_geracao + std_historico_melhor_geracao
+        lower_bound_geracao = mean_historico_melhor_geracao - std_historico_melhor_geracao
+        ax.fill_between(geracoes, lower_bound_geracao, upper_bound_geracao, 
+                        color='blue', alpha=0.1, label='Desvio Padrão (±1σ)')
+        
+        # Linha vermelha sólida (Média do Melhor Valor Global Encontrado)
+        ax.plot(geracoes, mean_historico_melhor_global, 'r-', label='Média do Melhor Valor Global Encontrado', linewidth=2)
+
+        ax.set_title(f'Gráfico de Convergência - Algoritmo Genético (Média de {self.num_simulacoes} Execuções)', fontsize=16)
+        ax.set_xlabel('Número de Iterações/Gerações', fontsize=12)
+        ax.set_ylabel('Valor da Função Objetivo (Z Ótimo)', fontsize=12)
+        
+        ax.legend(loc='upper right', fontsize=10)
+        ax.grid(True)
+        # REMOVIDO: plt.yscale('log')
+        ax.set_ylim(bottom=None) # Deixa o matplotlib definir o limite inferior automaticamente
+
+        plt.tight_layout()
         
         plot_filename = os.path.join(self.output_folder, f"convergencia_media_ag_{timestamp}.png")
-        plt.savefig(plot_filename, dpi=300)
+        plt.savefig(plot_filename, dpi=300, bbox_inches='tight')
         plt.close()
-        print(f"Gráfico de convergência média salvo em: {plot_filename}")
+        print(f"Gráfico de convergência média AG salvo em: {plot_filename}")
 
 # Bloco principal para executar a análise
 if __name__ == "__main__":
