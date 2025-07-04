@@ -303,8 +303,8 @@ if __name__ == "__main__":
     print("\n--- Teste direto do Algoritmo PSO (se executado como script principal) ---")
     # Define os parâmetros de teste para uma execução direta
     limites_funcao = (-500, 500) # Limites para a função W4
-    num_particulas = 20 # Número de partículas
-    num_iteracoes = 100 # Número de iterações
+    num_particulas = 15 # Número de partículas
+    num_iteracoes = 70 # Número de iterações
     w_max = 0.7 # Valor máximo para o peso de inércia 'w'
     w_min = 0.2 # Valor minimo para o peso de inércia 'w'
     c1 = 2 # Coeficiente cognitivo

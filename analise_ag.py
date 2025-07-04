@@ -16,13 +16,13 @@ PARAMETROS_AG = {
     "limites": (-500, 500),
     "num_geracoes": 200,
     "taxa_cruzamento": 0.7,
-    "taxa_mutacao": 0.01,
+    "taxa_mutacao": 0.07,
     "geracoes_sem_melhora_limite": 20, # Critério de parada por convergência
     "tolerancia": 1e-6 # Tolerância para o critério de parada
 }
 
 # Altere para o número desejado de simulações (ex: 30) para obter estatísticas significativas
-NUM_SIMULACOES = 2 # <-- IMPORTANTE: Mude para 30 ou mais para ter médias e desvios padrão úteis
+NUM_SIMULACOES = 20 # <-- IMPORTANTE: Mude para 30 ou mais para ter médias e desvios padrão úteis
 OUTPUT_FOLDER_ANALYSIS = "resultados_analise_ag" # Pasta para salvar os resultados da análise
 OUTPUT_FOLDER_SUMMARY = os.path.join(OUTPUT_FOLDER_ANALYSIS, "sumario_estatistico") # Nova pasta para o CSV sumarizado
 

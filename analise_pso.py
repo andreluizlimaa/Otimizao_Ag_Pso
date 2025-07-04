@@ -277,14 +277,14 @@ def save_summary_to_csv(results_df, algorithm_name="PSO", num_runs=1, pso_params
 
 if __name__ == "__main__":
     # --- VARIÁVEL PARA CONTROLAR QUANTAS VEZES O CÓDIGO RODA ---
-    num_repeticoes_simulacao = 1 # Altere este valor para definir quantas vezes o PSO será executado
+    num_repeticoes_simulacao = 20 # Altere este valor para definir quantas vezes o PSO será executado
 
     # --- Configuração dos Parâmetros do PSO ---
     limites_funcao = (-500, 500)
-    num_particulas = 20
+    num_particulas = 15
     num_iteracoes = 100 # Número MÁXIMO de iterações por execução do PSO
-    w_max = 0.7
-    w_min = 0.2
+    w_max = 0.9
+    w_min = 0.4
     c1 = 2
     c2 = 2
     tolerancia = 1e-6

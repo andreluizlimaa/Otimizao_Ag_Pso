@@ -1,0 +1,24 @@
+# --- Sumário de Desempenho do Algoritmo PSO ---
+# Número de Execuções: 20
+# Data e Hora da Análise: 20250703_210130
+#
+# Parâmetros da Simulação:
+#   Limites Funcao: (-500, 500)
+#   Num Particulas: 15
+#   Num Iteracoes: 50
+#   W Max: 0.9
+#   W Min: 0.4
+#   C1: 1
+#   C2: 1
+#   Tolerancia: 1e-06
+#   Iteracoes Sem Melhora Limite: 20
+#
+Métrica,Media,Desvio_Padrao
+Melhor Valor Global Final,-486.3771,54.7727
+Iterações Executadas (até convergência),48.6500,6.0374
+Avaliações da Função Objetivo (Total),730.5000,87.2067
+Multiplicações (Total),61765.4000,7533.7602
+Divisões (Total),7593.2000,924.8377
+Avaliações da Função Objetivo (Mínimo Global),701.5000,154.5239
+Multiplicações (Mínimo Global),58916.8500,12989.5146
+Divisões (Mínimo Global),7246.6500,1597.3985
