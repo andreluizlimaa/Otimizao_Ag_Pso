@@ -7,8 +7,7 @@ from datetime import datetime
 import pandas as pd
 
 # Importe a função principal do seu algoritmo genético.
-# Certifique-se de que 'genetico' é o nome correto do arquivo (sem .py)
-from Genetico import algoritmo_genetico # Ajustado para 'genetico' conforme padrão
+from Genetico import algoritmo_genetico
 
 # --- Definição de Parâmetros para Análise do AG ---
 PARAMETROS_AG = {
@@ -21,8 +20,7 @@ PARAMETROS_AG = {
     "tolerancia": 1e-6 # Tolerância para o critério de parada
 }
 
-# Altere para o número desejado de simulações (ex: 30) para obter estatísticas significativas
-NUM_SIMULACOES = 20 # <-- IMPORTANTE: Mude para 30 ou mais para ter médias e desvios padrão úteis
+NUM_SIMULACOES = 20 
 OUTPUT_FOLDER_ANALYSIS = "resultados_analise_ag" # Pasta para salvar os resultados da análise
 OUTPUT_FOLDER_SUMMARY = os.path.join(OUTPUT_FOLDER_ANALYSIS, "sumario_estatistico") # Nova pasta para o CSV sumarizado
 
@@ -141,7 +139,6 @@ class AnaliseAG:
             f.write("\n------------------------------------------------------------------\n")
             print(f"Relatório de análise salvo em: {report_filename}")
 
-        # --- NOVO: Lógica de Plotagem similar ao PSO ---
         # Garantir que todos os históricos tenham o mesmo comprimento para calcular média/desvio
         max_len = max(len(h) for h in all_historico_melhor_global) # Pode usar qualquer um dos históricos para o max_len
         if not all_historico_melhor_global: # Adiciona esta verificação
@@ -192,8 +189,7 @@ class AnaliseAG:
         
         ax.legend(loc='upper right', fontsize=10)
         ax.grid(True)
-        # REMOVIDO: plt.yscale('log')
-        ax.set_ylim(bottom=None) # Deixa o matplotlib definir o limite inferior automaticamente
+        ax.set_ylim(bottom=None)
 
         plt.tight_layout()
         

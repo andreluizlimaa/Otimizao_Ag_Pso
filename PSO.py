@@ -9,7 +9,6 @@ import os # Para interagir com o sistema operacional (criação de pastas, manip
 from datetime import datetime # Para trabalhar com datas e horas (gerar timestamps para nomes de arquivos)
 
 # Importa as funções personalizadas do projeto
-# Certifique-se de que 'funcoes_otimizacao.py' e 'utils.py' estão no mesmo diretório
 from funcoes_otimizacao import funcao_w4 # A função objetivo W4 a ser minimizada
 from Grafico import GraficoPSO # Importa a função para plotar o gráfico do PSO (visualização 3D)
 from utils import global_op_counter, FuncaoObjetivoWrapper # Contadores globais e o wrapper para a função objetivo
@@ -18,7 +17,7 @@ from utils import global_op_counter, FuncaoObjetivoWrapper # Contadores globais 
 class Particula:
     """
     Representa uma única partícula no algoritmo de Otimização por Enxame de Partículas (PSO).
-    Each partícula possui uma posição, velocidade e a melhor posição já encontrada por ela.
+    Cada partícula possui uma posição, velocidade e a melhor posição já encontrada por ela.
     """
     def __init__(self, limites):
         """

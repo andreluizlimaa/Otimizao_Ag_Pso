@@ -78,7 +78,6 @@ def GraficoPSO(enxame, iteracao, ax, melhor_valor_global, pso_params=None):
             f'Div: {pso_params["divisoes_minimo_global"]}'
         )
         
-        # Adiciona o texto da legenda ao gráfico em 2D (não interfere com a rotação 3D)
         ax.text2D(1.1, 0.98, legend_text, 
                   transform=ax.transAxes, # Transforma as coordenadas para serem relativas aos eixos
                   fontsize=10, 
